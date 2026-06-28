@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_GUID', fields: ['guid'])]
 #[ORM\Entity(repositoryClass: LodgingRepository::class)]
 class Lodging
 {
@@ -29,13 +30,10 @@ class Lodging
     #[ORM\Column(type: Types::SMALLINT)]
     private ?int $rating = null;
 
-    #[ORM\Column(length: 45)]
-    private ?string $location = null;
-
     /**
      * @var Collection<int, Picture>
      */
-    #[ORM\OneToMany(targetEntity: Picture::class, mappedBy: 'LodgingId', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Picture::class, mappedBy: 'LodgingId', orphanRemoval: true, cascade: ['persist'])]
     private Collection $pictures;
 
     #[ORM\ManyToOne(inversedBy: 'lodgings')]
@@ -50,6 +48,13 @@ class Lodging
 
     #[ORM\ManyToOne]
     private ?Tag $tags = null;
+
+    #[ORM\Column(type: Types::GUID)]
+    private ?string $guid = null;
+
+    #[ORM\ManyToOne(inversedBy: 'lodgings')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Location $location = null;
 
     public function __construct()
     {
@@ -94,18 +99,6 @@ class Lodging
     public function setDescription(string $description): static
     {
         $this->description = $description;
-
-        return $this;
-    }
-
-    public function getLocation(): ?string
-    {
-        return $this->location;
-    }
-
-    public function setLocation(string $location): static
-    {
-        $this->location = $location;
 
         return $this;
     }
@@ -180,6 +173,30 @@ class Lodging
     public function setRating(int $rating): static
     {
         $this->rating = $rating;
+
+        return $this;
+    }
+
+    public function getGuid(): ?string
+    {
+        return $this->guid;
+    }
+
+    public function setGuid(string $guid): static
+    {
+        $this->guid = $guid;
+
+        return $this;
+    }
+
+    public function getLocation(): ?Location
+    {
+        return $this->location;
+    }
+
+    public function setLocation(?Location $location): static
+    {
+        $this->location = $location;
 
         return $this;
     }

@@ -16,7 +16,7 @@ class Picture
     #[ORM\Column(length: 255)]
     private ?string $path = null;
 
-    #[ORM\ManyToOne(inversedBy: 'pictures')]
+    #[ORM\ManyToOne(inversedBy: 'pictures', cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: false)]
     private ?lodging $Lodging = null;
 

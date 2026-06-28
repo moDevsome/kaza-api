@@ -3,6 +3,8 @@
 namespace Api\Entity;
 
 use Api\Repository\LocationRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: LocationRepository::class)]
@@ -19,6 +21,17 @@ class Location
     #[ORM\ManyToOne(inversedBy: 'locations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?LocationArea $area = null;
+
+    /**
+     * @var Collection<int, Lodging>
+     */
+    #[ORM\OneToMany(targetEntity: Lodging::class, mappedBy: 'location')]
+    private Collection $lodgings;
+
+    public function __construct()
+    {
+        $this->lodgings = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -47,5 +60,13 @@ class Location
         $this->area = $area;
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Lodging>
+     */
+    public function getLodgings(): Collection
+    {
+        return $this->lodgings;
     }
 }
