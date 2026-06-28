@@ -40,12 +40,6 @@ class Lodging
     #[ORM\JoinColumn(nullable: false)]
     private ?Host $Host = null;
 
-    /**
-     * @var Collection<int, Equipments>
-     */
-    #[ORM\ManyToMany(targetEntity: Equipments::class, inversedBy: 'lodgings')]
-    private Collection $Equipments;
-
     #[ORM\ManyToOne]
     private ?Tag $tags = null;
 
@@ -56,10 +50,16 @@ class Lodging
     #[ORM\JoinColumn(nullable: false)]
     private ?Location $location = null;
 
+    /**
+     * @var Collection<int, Equipment>
+     */
+    #[ORM\ManyToMany(targetEntity: Equipment::class, mappedBy: 'lodging')]
+    private Collection $equipment;
+
     public function __construct()
     {
         $this->pictures = new ArrayCollection();
-        $this->Equipments = new ArrayCollection();
+        $this->equipment = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -145,14 +145,6 @@ class Lodging
         return $this;
     }
 
-    /**
-     * @return Collection<int, Equipments>
-     */
-    public function getEquipments(): Collection
-    {
-        return $this->Equipments;
-    }
-
     public function getTags(): ?Tag
     {
         return $this->tags;
@@ -197,6 +189,33 @@ class Lodging
     public function setLocation(?Location $location): static
     {
         $this->location = $location;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Equipment>
+     */
+    public function getEquipment(): Collection
+    {
+        return $this->equipment;
+    }
+
+    public function addEquipment(Equipment $equipment): static
+    {
+        if (!$this->equipment->contains($equipment)) {
+            $this->equipment->add($equipment);
+            $equipment->addLodging($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEquipment(Equipment $equipment): static
+    {
+        if ($this->equipment->removeElement($equipment)) {
+            $equipment->removeLodging($this);
+        }
 
         return $this;
     }

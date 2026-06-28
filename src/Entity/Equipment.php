@@ -2,31 +2,31 @@
 
 namespace Api\Entity;
 
-use Api\Repository\EquipmentsRepository;
+use Api\Repository\EquipmentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: EquipmentsRepository::class)]
-class Equipments
+#[ORM\Entity(repositoryClass: EquipmentRepository::class)]
+class Equipment
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 56)]
+    #[ORM\Column(length: 80)]
     private ?string $name = null;
 
     /**
      * @var Collection<int, Lodging>
      */
-    #[ORM\ManyToMany(targetEntity: Lodging::class, mappedBy: 'Equipments')]
-    private Collection $lodgings;
+    #[ORM\ManyToMany(targetEntity: Lodging::class, inversedBy: 'equipment')]
+    private Collection $lodging;
 
     public function __construct()
     {
-        $this->lodgings = new ArrayCollection();
+        $this->lodging = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -51,6 +51,22 @@ class Equipments
      */
     public function getLodgings(): Collection
     {
-        return $this->lodgings;
+        return $this->lodging;
+    }
+
+    public function addLodging(Lodging $lodging): static
+    {
+        if (!$this->lodging->contains($lodging)) {
+            $this->lodging->add($lodging);
+        }
+
+        return $this;
+    }
+
+    public function removeLodging(Lodging $lodging): static
+    {
+        $this->lodging->removeElement($lodging);
+
+        return $this;
     }
 }

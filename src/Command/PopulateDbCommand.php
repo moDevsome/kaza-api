@@ -2,7 +2,7 @@
 
 namespace Api\Command;
 
-use Api\Entity\Equipments;
+use Api\Entity\Equipment;
 use Api\Entity\Host;
 use Api\Entity\Location;
 use Api\Entity\LocationArea;
@@ -48,10 +48,10 @@ class PopulateDbCommand extends Command
         foreach (
             [
                 'content_translation',
-                'equipments',
+                'equipment',
                 'picture',
                 'lodging',
-                'lodging_equipments',
+                'equipment_lodging',
                 'tag',
                 'host',
                 'user',
@@ -161,7 +161,7 @@ class PopulateDbCommand extends Command
 
                 $created[] = $equipment;
 
-                $equipmentEntity = new Equipments();
+                $equipmentEntity = new Equipment();
                 $equipmentEntity->setName($equipment);
 
                 $this->entityManager->persist($equipmentEntity);
@@ -275,6 +275,11 @@ class PopulateDbCommand extends Command
                 $pictureEntity->setPath($picture);
 
                 $lodgingEntity->addPicture($pictureEntity);
+            }
+
+            // --- Add equipments ---
+            foreach (array_filter($this->insertedEquipmentEntities, fn($entity) =>  in_array($entity->getName(), $testLodging->equipments)) as $equipmentEntity) {
+                $lodgingEntity->addEquipment($equipmentEntity);
             }
 
             $this->entityManager->persist($lodgingEntity);
