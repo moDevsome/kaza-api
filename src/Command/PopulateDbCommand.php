@@ -53,6 +53,7 @@ class PopulateDbCommand extends Command
                 'lodging',
                 'equipment_lodging',
                 'tag',
+                'lodging_tag',
                 'host',
                 'user',
                 'location',
@@ -252,11 +253,6 @@ class PopulateDbCommand extends Command
             $locationEntity = $this->findLodgingLocationEntity($testLodging->location);
             if ($locationEntity === null)
                 throw new Exception('Unable to find location entity for the lodging ' . $testLodging->id);
-            /*
-            TODO:rework Tag and Equipment entity
-            $equipmentEntities = array_filter($this->insertedEquipmentEntities, fn($entity) =>  in_array($entity->getName(), $testLodging->equipments));
-            $tagEntities = array_filter($this->insertedTagEntities, fn($entity) =>  in_array($entity->getName(), $testLodging->tag));
-            */
 
             // --- Insert lodging ---
             $lodgingEntity = new Lodging();
@@ -280,6 +276,11 @@ class PopulateDbCommand extends Command
             // --- Add equipments ---
             foreach (array_filter($this->insertedEquipmentEntities, fn($entity) =>  in_array($entity->getName(), $testLodging->equipments)) as $equipmentEntity) {
                 $lodgingEntity->addEquipment($equipmentEntity);
+            }
+
+            // --- Add tags ---
+            foreach (array_filter($this->insertedTagEntities, fn($entity) =>  in_array($entity->getName(), $testLodging->tags)) as $tagEntity) {
+                $lodgingEntity->addTag($tagEntity);
             }
 
             $this->entityManager->persist($lodgingEntity);

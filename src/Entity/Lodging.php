@@ -40,9 +40,6 @@ class Lodging
     #[ORM\JoinColumn(nullable: false)]
     private ?Host $Host = null;
 
-    #[ORM\ManyToOne]
-    private ?Tag $tags = null;
-
     #[ORM\Column(type: Types::GUID)]
     private ?string $guid = null;
 
@@ -56,10 +53,17 @@ class Lodging
     #[ORM\ManyToMany(targetEntity: Equipment::class, mappedBy: 'lodging')]
     private Collection $equipment;
 
+    /**
+     * @var Collection<int, Tag>
+     */
+    #[ORM\ManyToMany(targetEntity: Tag::class, inversedBy: 'lodgings')]
+    private Collection $tag;
+
     public function __construct()
     {
         $this->pictures = new ArrayCollection();
         $this->equipment = new ArrayCollection();
+        $this->tag = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -145,18 +149,6 @@ class Lodging
         return $this;
     }
 
-    public function getTags(): ?Tag
-    {
-        return $this->tags;
-    }
-
-    public function setTags(?Tag $tags): static
-    {
-        $this->tags = $tags;
-
-        return $this;
-    }
-
     public function getRating(): ?int
     {
         return $this->rating;
@@ -216,6 +208,30 @@ class Lodging
         if ($this->equipment->removeElement($equipment)) {
             $equipment->removeLodging($this);
         }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Tag>
+     */
+    public function getTag(): Collection
+    {
+        return $this->tag;
+    }
+
+    public function addTag(Tag $tag): static
+    {
+        if (!$this->tag->contains($tag)) {
+            $this->tag->add($tag);
+        }
+
+        return $this;
+    }
+
+    public function removeTag(Tag $tag): static
+    {
+        $this->tag->removeElement($tag);
 
         return $this;
     }
