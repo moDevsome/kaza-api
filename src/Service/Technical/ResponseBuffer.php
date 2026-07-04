@@ -2,6 +2,7 @@
 
 namespace Api\Service\Technical;
 
+use Api\Object\Technical\ResponseBufferObject;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
@@ -25,18 +26,14 @@ final class ResponseBuffer
         $this->warnings[] = $warning;
     }
 
-    public function buildResponse(array|object $datas): JsonResponse
+    public function buildResponse(array|object|null $datas): JsonResponse
     {
 
         $jsonResponse = new JsonResponse();
         $jsonResponse->setEncodingOptions(JSON_UNESCAPED_UNICODE);
         $jsonResponse->setCharset('UTF-8');
         $jsonResponse->setStatusCode($this->statusCode);
-        $jsonResponse->setData([
-            'content' => $datas,
-            'errors' => $this->errors,
-            'warnings' => $this->warnings
-        ]);
+        $jsonResponse->setData(new ResponseBufferObject($datas, $this->errors, $this->warnings));
         return $jsonResponse;
     }
 

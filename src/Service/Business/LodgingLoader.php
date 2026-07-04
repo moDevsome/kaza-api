@@ -4,8 +4,8 @@ namespace Api\Service\Business;
 
 use Api\Entity\Lodging;
 use Api\Interface\ObjectLoaderInterface;
-use Api\Object\HostObject;
-use Api\Object\LodgingObject;
+use Api\Object\Business\HostObject;
+use Api\Object\Business\LodgingObject;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -43,10 +43,10 @@ final class LodgingLoader implements ObjectLoaderInterface
         );
     }
 
-    public function loadOne(string|int $uuid): LodgingObject|null
+    public function loadOne(string|int $guid): LodgingObject|null
     {
 
-        $lodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $uuid]);
+        $lodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
         if (!$lodging)
             return null;
 

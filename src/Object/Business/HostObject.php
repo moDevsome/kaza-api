@@ -1,6 +1,6 @@
 <?php
 
-namespace Api\Object;
+namespace Api\Object\Business;
 
 class HostObject
 {
