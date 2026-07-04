@@ -33,7 +33,7 @@ class Lodging
     /**
      * @var Collection<int, Picture>
      */
-    #[ORM\OneToMany(targetEntity: Picture::class, mappedBy: 'LodgingId', orphanRemoval: true, cascade: ['persist'])]
+    #[ORM\OneToMany(targetEntity: Picture::class, mappedBy: 'Lodging', orphanRemoval: true, cascade: ['persist'])]
     private Collection $pictures;
 
     #[ORM\ManyToOne(inversedBy: 'lodgings')]
@@ -188,7 +188,7 @@ class Lodging
     /**
      * @return Collection<int, Equipment>
      */
-    public function getEquipment(): Collection
+    public function getEquipments(): Collection
     {
         return $this->equipment;
     }
@@ -215,7 +215,7 @@ class Lodging
     /**
      * @return Collection<int, Tag>
      */
-    public function getTag(): Collection
+    public function getTags(): Collection
     {
         return $this->tag;
     }
