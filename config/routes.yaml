@@ -9,3 +9,7 @@
 
 controllers:
     resource: routing.controllers
+
+# config/routes.yaml
+auth_login_check:
+    path: /auth/login_check
