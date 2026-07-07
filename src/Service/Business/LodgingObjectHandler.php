@@ -10,7 +10,7 @@ use Api\Entity\Picture;
 use Api\Entity\Tag;
 use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
-use Api\Interface\ObjectLoaderInterface;
+use Api\Interface\ObjectHandlerInterface;
 use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\HostObject;
 use Api\Object\Business\LodgingObject;
@@ -21,7 +21,7 @@ use Exception;
 /**
  * This class is made to load one or more LoadgingObject from the database
  */
-final class LodgingLoader implements ObjectLoaderInterface
+final class LodgingObjectHandler implements ObjectHandlerInterface
 {
     private array $allowedPictureFileMimeTypes = [
         'image/bmp',

@@ -3,7 +3,7 @@
 
 namespace Api\Interface;
 
-interface ObjectLoaderInterface
+interface ObjectHandlerInterface
 {
 
     public function loadList(array $criterias = []): array;

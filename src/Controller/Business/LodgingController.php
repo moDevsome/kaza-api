@@ -4,7 +4,7 @@ namespace Api\Controller\Business;
 
 use Api\Entity\Host;
 use Api\Exception\BusinessException;
-use Api\Service\Business\LodgingLoader;
+use Api\Service\Business\LodgingObjectHandler;
 use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Service\Technical\ResponseBuffer;
 use Exception;
@@ -24,7 +24,7 @@ final class LodgingController extends AbstractController
     public function index(): JsonResponse
     {
 
-        return $this->responseBuffer->buildResponse($this->loader->loadList());
+        return $this->responseBuffer->buildResponse($this->handler->loadList());
     }
 
     /**
@@ -38,7 +38,7 @@ final class LodgingController extends AbstractController
         if (!ctype_alnum($guid))
             throw new BusinessException(404,  $errorMessage);
 
-        $lodging = $this->loader->loadOne($guid);
+        $lodging = $this->handler->loadOne($guid);
 
         if ($lodging === null)
             throw new BusinessException(404,  $errorMessage);
@@ -66,7 +66,7 @@ final class LodgingController extends AbstractController
             if ($hostEntity === null)
                 throw new BusinessException(500, 'Host not found');
 
-            $createdLodging = $this->loader->createOne($createLodgingRequestObject, $hostEntity);
+            $createdLodging = $this->handler->createOne($createLodgingRequestObject, $hostEntity);
 
             $this->responseBuffer->addHeader('Location', '/lodging/' . $createdLodging->id);
             $this->responseBuffer->setStatusCode(201);
@@ -84,7 +84,7 @@ final class LodgingController extends AbstractController
 
     public function __construct(
         private readonly ResponseBuffer $responseBuffer,
-        private readonly LodgingLoader $loader,
+        private readonly LodgingObjectHandler $handler,
         private readonly EntityManagerInterface $entityManager,
         protected readonly RequestStack $requestStack,
         private readonly SerializerInterface $serializer
