@@ -32,9 +32,15 @@ security:
             stateless: true
             jwt: ~
 
+        admin:
+            pattern:   ^/admin
+            stateless: true
+            jwt: ~
+
     access_control:
         - { path: ^/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/auth,       roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/admin, roles: ROLE_ADMIN }
 
 when@test:
     security:
