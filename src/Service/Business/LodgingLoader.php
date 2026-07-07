@@ -6,6 +6,7 @@ use Api\Entity\Equipment;
 use Api\Entity\Host;
 use Api\Entity\Location;
 use Api\Entity\Lodging;
+use Api\Entity\Picture;
 use Api\Entity\Tag;
 use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
@@ -22,6 +23,24 @@ use Exception;
  */
 final class LodgingLoader implements ObjectLoaderInterface
 {
+    private array $allowedPictureFileMimeTypes = [
+        'image/bmp',
+        'image/jpeg',
+        'image/png',
+        'image/webp'
+    ];
+
+    private function getPictureFileMimeType(string $picturePath): ?string
+    {
+        try {
+            $fileContent = file_get_contents($picturePath);
+
+            $fileInfo = new \finfo(FILEINFO_MIME_TYPE);
+            return $fileInfo->buffer($fileContent);
+        } catch (Exception $e) {
+            return null;
+        }
+    }
 
     private function convertToLodgingObject(Lodging $input): LodgingObject
     {
@@ -81,9 +100,34 @@ final class LodgingLoader implements ObjectLoaderInterface
                     throw new BusinessException(400, 'The given locationId (' . $createRequest->locationId . ') is not associated with any location');
             }
 
+            // Check the cover picture
+            $coverPicture = '';
+            if ($createRequest->cover !== null) {
+                if (in_array($this->getPictureFileMimeType($createRequest->cover), $this->allowedPictureFileMimeTypes)) {
+                    $coverPicture = $createRequest->cover;
+                } else {
+                    throw new BusinessException(400, 'The type of the file "' . $createRequest->cover . '" is not allowed. Allowed types: ' . implode(', ', $this->allowedPictureFileMimeTypes));
+                }
+            }
+
+            // Check each given picture
+            $pictureEntities = array();
+            if (is_array($createRequest->pictures) and count($createRequest->pictures) > 0) {
+
+                foreach ($createRequest->pictures as $picturePath) {
+                    if (in_array($this->getPictureFileMimeType($picturePath), $this->allowedPictureFileMimeTypes)) {
+                        $pictureEntity = new Picture();
+                        $pictureEntity->setPath($picturePath);
+                        $pictureEntities[] = $pictureEntity;
+                    } else {
+                        throw new BusinessException(400, 'The type of the file "' . $picturePath . '" is not allowed. Allowed types: ' . implode(', ', $this->allowedPictureFileMimeTypes));
+                    }
+                }
+            }
+
             $newEntity = new Lodging();
             $newEntity->setTitle($createRequest->title);
-            $newEntity->setCover($createRequest->cover ?? '');
+            $newEntity->setCover($coverPicture);
             $newEntity->setDescription($createRequest->description);
             $newEntity->setHost($host);
 
@@ -119,6 +163,13 @@ final class LodgingLoader implements ObjectLoaderInterface
             }
 
             $this->entityManager->persist($newEntity);
+
+            // Insert each given picture
+            foreach ($pictureEntities as $pictureEntity) {
+                $pictureEntity->setLodging($newEntity);
+                $newEntity->addPicture($pictureEntity);
+            }
+
             $this->entityManager->flush();
 
             if ($newEntity === null)
@@ -132,6 +183,6 @@ final class LodgingLoader implements ObjectLoaderInterface
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly ContentTranslationStore $contentTranslationStore
+        private readonly ContentTranslationStore $contentTranslationStore,
     ) {}
 }
