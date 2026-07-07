@@ -11,6 +11,17 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class HostRepository extends ServiceEntityRepository
 {
+
+    public function findOneByUserId(int $userId): ?Host
+    {
+        return $this->createQueryBuilder('h')
+            ->andWhere('h.user = :user_id')
+            ->setParameter('user_id', $userId)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Host::class);
@@ -33,11 +44,6 @@ class HostRepository extends ServiceEntityRepository
 
     //    public function findOneBySomeField($value): ?Host
     //    {
-    //        return $this->createQueryBuilder('h')
-    //            ->andWhere('h.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
+
     //    }
 }

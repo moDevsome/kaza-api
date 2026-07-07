@@ -15,6 +15,7 @@ final class ResponseBuffer
     private array $warnings = [];
 
     private int $statusCode = 200;
+    private array $headers = array();
 
     public function addError(string $error): void
     {
@@ -26,14 +27,18 @@ final class ResponseBuffer
         $this->warnings[] = $warning;
     }
 
+    public function addHeader(string $headerName, string $headerValue): void
+    {
+
+        $this->headers[$headerName] = $headerValue;
+    }
+
     public function buildResponse(array|object|null $datas): JsonResponse
     {
 
-        $jsonResponse = new JsonResponse();
+        $jsonResponse = new JsonResponse(new ResponseBufferObject($datas, $this->errors, $this->warnings), $this->statusCode, $this->headers);
         $jsonResponse->setEncodingOptions(JSON_UNESCAPED_UNICODE);
         $jsonResponse->setCharset('UTF-8');
-        $jsonResponse->setStatusCode($this->statusCode);
-        $jsonResponse->setData(new ResponseBufferObject($datas, $this->errors, $this->warnings));
         return $jsonResponse;
     }
 

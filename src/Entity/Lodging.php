@@ -27,7 +27,7 @@ class Lodging
     #[ORM\Column(length: 800)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::SMALLINT)]
+    #[ORM\Column(type: Types::SMALLINT, nullable: true)]
     private ?int $rating = null;
 
     /**
