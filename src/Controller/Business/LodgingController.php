@@ -5,6 +5,7 @@ namespace Api\Controller\Business;
 use Api\Entity\Host;
 use Api\Entity\Lodging;
 use Api\Exception\BusinessException;
+use Api\Object\Business\AddElementRequestObject;
 use Api\Service\Business\LodgingObjectHandler;
 use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\PatchRequestObject;
@@ -19,6 +20,26 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final class LodgingController extends AbstractController
 {
+
+
+    /**
+     * Check if the current user is the updated lodging owner
+     * @param Lodging $updatedLodging
+     * @throws BusinessException
+     * @return void
+     */
+    private function checkOwner(Lodging $updatedLodging): void
+    {
+        // Get the Host associated with the current user
+        $hostEntity = $this->entityManager->getRepository(Host::class)->findOneByUserId($this->getUser()->getId());
+        if ($hostEntity === null)
+            throw new BusinessException(500, 'Host not found');
+
+        // Check if the lodging is associated with the current user
+        if ($updatedLodging->getHost()->getId() !== $hostEntity->getId())
+            throw new BusinessException(403,  'Incorrect lodging host');
+    }
+
     /**
      * Return a list of lodging
      */
@@ -31,6 +52,9 @@ final class LodgingController extends AbstractController
 
     /**
      * Return one lodging
+     * @param string $guid
+     * @throws BusinessException
+     * @return JsonResponse
      */
     #[Route('/lodging/{guid}', name: 'api_lodging')]
     public function lodging(string $guid): JsonResponse
@@ -49,83 +73,106 @@ final class LodgingController extends AbstractController
     }
 
     /**
-     * "Auth Create lodging" endpoint
+     * "Create lodging" endpoint for authenticated user
+     * @throws BusinessException
+     * @return JsonResponse
      */
     #[Route('/auth/lodging', name: 'api_create_lodging', methods: ['POST'])]
     public function create(): JsonResponse
     {
 
-        try {
-
-            $createLodgingRequestObject = $this->serializer->deserialize(
-                $this->requestStack->getCurrentRequest()->getContent(),
-                CreateLodgingRequestObject::class,
-                'json'
-            );
-
-            // Get the Host associated with the current user
-            $hostEntity = $this->entityManager->getRepository(Host::class)->findOneByUserId($this->getUser()->getId());
-            if ($hostEntity === null)
-                throw new BusinessException(500, 'Host not found');
-
-            $createdLodging = $this->handler->createOne($createLodgingRequestObject, $hostEntity);
-
-            $this->responseBuffer->addHeader('Location', '/lodging/' . $createdLodging->id);
-            $this->responseBuffer->setStatusCode(201);
-            return $this->responseBuffer->buildResponse($createdLodging);
-        } catch (Exception $e) {
-            $exceptionPath = explode('\\', $e::class);
-            $exceptioName = count($exceptionPath) > 0 ? array_pop($exceptionPath) : null;
-            if (in_array($exceptioName, ['NotEncodableValueException', 'MissingConstructorArgumentsException'])) {
-                throw new BusinessException(400, $e->getMessage());
-            } else {
-                throw $e;
-            }
-        }
-    }
-
-    /**
-     * Update one lodging using the PATCH method and return the full object
-     */
-    #[Route('/auth/lodging/{guid}/{property}', name: 'api_update_lodging', methods: ['PATCH'])]
-    public function update(string $guid, string $property): JsonResponse
-    {
-        if (!ctype_alnum($guid))
-            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+        $createLodgingRequestObject = $this->serializer->deserialize(
+            $this->requestStack->getCurrentRequest()->getContent(),
+            CreateLodgingRequestObject::class,
+            'json'
+        );
 
         // Get the Host associated with the current user
         $hostEntity = $this->entityManager->getRepository(Host::class)->findOneByUserId($this->getUser()->getId());
         if ($hostEntity === null)
             throw new BusinessException(500, 'Host not found');
 
-        // Check if the lodging is associated with the current user
+        $createdLodging = $this->handler->createOne($createLodgingRequestObject, $hostEntity);
+
+        $this->responseBuffer->addHeader('Location', '/lodging/' . $createdLodging->id);
+        $this->responseBuffer->setStatusCode(201);
+        return $this->responseBuffer->buildResponse($createdLodging);
+    }
+
+    /**
+     * Add a Picture, a Tag or Equipement to a Lodging
+     * Fallback to "patch" method if the route does not match
+     * @param string $guid
+     * @param string $element - "picture", "tag" or "equipment"
+     * @throws BusinessException
+     * @return JsonResponse
+     */
+    #[
+        Route(
+            '/auth/lodging/{guid}/add-{element}',
+            name: 'api_lodging_add_element',
+            methods: ['POST'],
+            condition: 'params["element"] in ["picture", "tag", "equipment"]',
+            priority: 9
+        )
+    ]
+    public function addElement(string $guid, string $element): JsonResponse
+    {
+        if (!ctype_alnum($guid))
+            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+
         $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
         if ($currentLodging === null)
             throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
 
-        if ($currentLodging->getHost()->getId() !== $hostEntity->getId())
-            throw new BusinessException(403,  'Incorrect lodging host');
+        $this->checkOwner($currentLodging);
 
-        try {
+        $addElementRequestObject = $this->serializer->deserialize(
+            $this->requestStack->getCurrentRequest()->getContent(),
+            AddElementRequestObject::class,
+            'json'
+        );
 
-            $patchRequestObject = $this->serializer->deserialize(
-                $this->requestStack->getCurrentRequest()->getContent(),
-                PatchRequestObject::class,
-                'json'
-            );
+        $updatedLodging = $this->handler->addElement($guid, $element, $addElementRequestObject);
 
-            $patchedLodging = $this->handler->patchOne($guid, $property, $patchRequestObject);
+        return $this->responseBuffer->buildResponse($updatedLodging);
+    }
 
-            return $this->responseBuffer->buildResponse($patchedLodging);
-        } catch (Exception $e) {
-            $exceptionPath = explode('\\', $e::class);
-            $exceptioName = count($exceptionPath) > 0 ? array_pop($exceptionPath) : null;
-            if (in_array($exceptioName, ['NotEncodableValueException', 'MissingConstructorArgumentsException'])) {
-                throw new BusinessException(400, $e->getMessage());
-            } else {
-                throw $e;
-            }
-        }
+    /**
+     * Update one lodging using the PATCH method and return the full object
+     * @param string $guid
+     * @param string $property - The property name
+     * @throws BusinessException
+     * @return JsonResponse
+     */
+    #[
+        Route(
+            '/auth/lodging/{guid}/{property}',
+            name: 'api_patch_lodging',
+            methods: ['PATCH'],
+            priority: 10
+        )
+    ]
+    public function patch(string $guid, string $property): JsonResponse
+    {
+        if (!ctype_alnum($guid))
+            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        if ($currentLodging === null)
+            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+
+        $this->checkOwner($currentLodging);
+
+        $patchRequestObject = $this->serializer->deserialize(
+            $this->requestStack->getCurrentRequest()->getContent(),
+            PatchRequestObject::class,
+            'json'
+        );
+
+        $patchedLodging = $this->handler->patchOne($guid, $property, $patchRequestObject);
+
+        return $this->responseBuffer->buildResponse($patchedLodging);
     }
 
     public function __construct(
