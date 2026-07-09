@@ -9,6 +9,7 @@ use Api\Object\Business\AddElementRequestObject;
 use Api\Service\Business\LodgingObjectHandler;
 use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\PatchRequestObject;
+use Api\Object\Business\RemoveElementRequestObject;
 use Api\Service\Technical\ResponseBuffer;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -101,7 +102,7 @@ final class LodgingController extends AbstractController
 
     /**
      * Add a Picture, a Tag or Equipement to a Lodging
-     * Fallback to "patch" method if the route does not match
+     * Fallback to "removeElement" method if the route does not match
      * @param string $guid
      * @param string $element - "picture", "tag" or "equipment"
      * @throws BusinessException
@@ -113,7 +114,7 @@ final class LodgingController extends AbstractController
             name: 'api_lodging_add_element',
             methods: ['POST'],
             condition: 'params["element"] in ["picture", "tag", "equipment"]',
-            priority: 9
+            priority: 8
         )
     ]
     public function addElement(string $guid, string $element): JsonResponse
@@ -134,6 +135,46 @@ final class LodgingController extends AbstractController
         );
 
         $updatedLodging = $this->handler->addElement($guid, $element, $addElementRequestObject);
+
+        return $this->responseBuffer->buildResponse($updatedLodging);
+    }
+
+    /**
+     * Remove a Picture, a Tag or Equipement from a Lodging
+     * Fallback to "patch" method if the route does not match
+     * @param string $guid
+     * @param string $element - "picture", "tag" or "equipment"
+     * @throws BusinessException
+     * @return JsonResponse
+     */
+    #[
+        Route(
+            '/auth/lodging/{guid}/remove-{element}',
+            name: 'api_lodging_remove_element',
+            methods: ['DELETE'],
+            condition: 'params["element"] in ["picture", "tag", "equipment"]',
+            priority: 9
+        )
+    ]
+    public function removeElement(string $guid, string $element): JsonResponse
+    {
+
+        if (!ctype_alnum($guid))
+            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        if ($currentLodging === null)
+            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+
+        $this->checkOwner($currentLodging);
+
+        $removeElementRequestObject = $this->serializer->deserialize(
+            $this->requestStack->getCurrentRequest()->getContent(),
+            RemoveElementRequestObject::class,
+            'json'
+        );
+
+        $updatedLodging = $this->handler->removeElement($guid, $element, $removeElementRequestObject);
 
         return $this->responseBuffer->buildResponse($updatedLodging);
     }

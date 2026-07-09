@@ -12,6 +12,7 @@ use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
 use Api\Interface\ObjectHandlerInterface;
 use Api\Object\Business\AddElementRequestObject;
+use Api\Object\Business\RemoveElementRequestObject;
 use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\HostObject;
 use Api\Object\Business\LodgingObject;
@@ -309,61 +310,111 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
      */
     public function addElement(string $guid, string $element, AddElementRequestObject $requestObject): LodgingObject
     {
-        try {
+        $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        if ($lodgingEntity === null)
+            throw new BusinessException(404, 'Lodging not found');
 
-            $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
-            if ($lodgingEntity === null)
-                throw new BusinessException(404, 'Lodging not found');
+        switch ($element) {
 
-            switch ($element) {
+            case 'picture':
+                if (!is_string($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a picture path (string)');
 
-                case 'picture':
-                    if (!is_string($requestObject->value))
-                        throw new BusinessException(400, 'The given value must be a picture path (string)');
+                // Insert the new picture entity only if the given path is not already a picture associated with the lodging
+                if (!array_find($lodgingEntity->getPictures()->toArray(), fn($pictureEntity) =>  $pictureEntity->getPath() === $requestObject->value)) {
 
-                    // Insert the new picture entity only if the given path is not already a picture associated with the lodging
-                    if (!array_find($lodgingEntity->getPictures()->toArray(), fn($pictureEntity) =>  $pictureEntity->getPath() === $requestObject->value)) {
+                    if (!in_array($this->getPictureFileMimeType($requestObject->value), $this->allowedPictureFileMimeTypes))
+                        throw new BusinessException(400, 'The type of the file "' . $requestObject->value . '" is not allowed. Allowed types: ' . implode(', ', $this->allowedPictureFileMimeTypes));
 
-                        if (!in_array($this->getPictureFileMimeType($requestObject->value), $this->allowedPictureFileMimeTypes))
-                            throw new BusinessException(400, 'The type of the file "' . $requestObject->value . '" is not allowed. Allowed types: ' . implode(', ', $this->allowedPictureFileMimeTypes));
+                    $pictureEntity = new Picture();
+                    $pictureEntity->setPath($requestObject->value);
+                    $lodgingEntity->addPicture($pictureEntity);
+                }
+                break;
 
-                        $pictureEntity = new Picture();
-                        $pictureEntity->setPath($requestObject->value);
-                        $lodgingEntity->addPicture($pictureEntity);
-                    }
-                    break;
+            case 'tag':
+                if (!is_int($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Tag id (int)');
 
-                case 'tag':
-                    if (!is_int($requestObject->value))
-                        throw new BusinessException(400, 'The given value must be a Tag id (int)');
+                $tagEntity = $this->entityManager->getRepository(Tag::class)->findOneBy(['id' => $requestObject->value]);
+                if ($tagEntity === null)
+                    throw new BusinessException(400, 'Unknown tag (' . $requestObject->value . ')');
 
-                    $tagEntity = $this->entityManager->getRepository(Tag::class)->findOneBy(['id' => $requestObject->value]);
-                    if ($tagEntity === null)
-                        throw new BusinessException(400, 'Unknown tag (' . $requestObject->value . ')');
+                $lodgingEntity->addTag($tagEntity);
+                break;
 
-                    $lodgingEntity->addTag($tagEntity);
-                    break;
+            case 'equipment':
+                if (!is_int($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Equipment id (int)');
 
-                case 'equipment':
-                    if (!is_array($requestObject->value))
-                        throw new BusinessException(400, 'The given value must be a Equipment id (int)');
+                $equipmentEntity = $this->entityManager->getRepository(Equipment::class)->findOneBy(['id' => $requestObject->value]);
+                if ($equipmentEntity === null)
+                    throw new BusinessException(400, 'Unknown equipment (' . $requestObject->value . ')');
 
-                    $equipmentEntity = $this->entityManager->getRepository(Equipment::class)->findOneBy(['id' => $requestObject->value]);
-                    if ($equipmentEntity === null)
-                        throw new BusinessException(400, 'Unknown equipment (' . $requestObject->value . ')');
+                $lodgingEntity->addEquipment($equipmentEntity);
+                break;
 
-                    $lodgingEntity->addEquipment($equipmentEntity);
-                    break;
-
-                default:
-                    throw new BusinessException(400, 'Bad request'); // Should not append since the "element" is checked by the router
-            }
-            $this->entityManager->flush();
-
-            return $this->convertToLodgingObject($lodgingEntity);
-        } catch (Exception $e) {
-            throw $e;
+            default:
+                throw new BusinessException(400, 'Bad request'); // Should not append since the "element" is checked by the router
         }
+        $this->entityManager->flush();
+
+        return $this->convertToLodgingObject($lodgingEntity);
+    }
+
+    /**
+     * Remove a Picture, a Tag or a Equipment from a Lodging object
+     *
+     * @param string $guid
+     * @param string $element
+     * @param RemoveElementRequestObject $requestObject
+     * @throws BusinessException
+     * @return LodgingObject
+     */
+    public function removeElement(string $guid, string $element, RemoveElementRequestObject $requestObject): LodgingObject
+    {
+        $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        if ($lodgingEntity === null)
+            throw new BusinessException(404, 'Lodging not found');
+
+        switch ($element) {
+
+            case 'picture':
+                if (!is_string($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a picture path (string)');
+
+                // Do something only if the given path is a picture associated with the lodging
+                $pictureEntity = array_find($lodgingEntity->getPictures()->toArray(), fn($pictureEntity) =>  $pictureEntity->getPath() === $requestObject->value);
+                if ($pictureEntity !== null) {
+
+                    $lodgingEntity->removePicture($pictureEntity);
+                }
+                break;
+
+            case 'tag':
+                if (!is_int($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Tag id (int)');
+
+                $tagEntity = $this->entityManager->getRepository(Tag::class)->findOneBy(['id' => $requestObject->value]);
+                if ($tagEntity !== null)
+                    $lodgingEntity->removeTag($tagEntity);
+                break;
+
+            case 'equipment':
+                if (!is_int($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Equipment id (int)');
+
+                $equipmentEntity = $this->entityManager->getRepository(Equipment::class)->findOneBy(['id' => $requestObject->value]);
+                if ($equipmentEntity !== null)
+                    $lodgingEntity->removeEquipment($equipmentEntity);
+                break;
+
+            default:
+                throw new BusinessException(400, 'Bad request'); // Should not append since the "element" is checked by the router
+        }
+        $this->entityManager->flush();
+
+        return $this->convertToLodgingObject($lodgingEntity);
     }
 
     public function __construct(
