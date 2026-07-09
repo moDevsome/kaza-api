@@ -3,9 +3,11 @@
 namespace Api\Controller\Business;
 
 use Api\Entity\Host;
+use Api\Entity\Lodging;
 use Api\Exception\BusinessException;
 use Api\Service\Business\LodgingObjectHandler;
 use Api\Object\Business\CreateLodgingRequestObject;
+use Api\Object\Business\PatchRequestObject;
 use Api\Service\Technical\ResponseBuffer;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -71,6 +73,50 @@ final class LodgingController extends AbstractController
             $this->responseBuffer->addHeader('Location', '/lodging/' . $createdLodging->id);
             $this->responseBuffer->setStatusCode(201);
             return $this->responseBuffer->buildResponse($createdLodging);
+        } catch (Exception $e) {
+            $exceptionPath = explode('\\', $e::class);
+            $exceptioName = count($exceptionPath) > 0 ? array_pop($exceptionPath) : null;
+            if (in_array($exceptioName, ['NotEncodableValueException', 'MissingConstructorArgumentsException'])) {
+                throw new BusinessException(400, $e->getMessage());
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * Update one lodging using the PATCH method and return the full object
+     */
+    #[Route('/auth/lodging/{guid}/{property}', name: 'api_update_lodging', methods: ['PATCH'])]
+    public function update(string $guid, string $property): JsonResponse
+    {
+        if (!ctype_alnum($guid))
+            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+
+        // Get the Host associated with the current user
+        $hostEntity = $this->entityManager->getRepository(Host::class)->findOneByUserId($this->getUser()->getId());
+        if ($hostEntity === null)
+            throw new BusinessException(500, 'Host not found');
+
+        // Check if the lodging is associated with the current user
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        if ($currentLodging === null)
+            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+
+        if ($currentLodging->getHost()->getId() !== $hostEntity->getId())
+            throw new BusinessException(403,  'Incorrect lodging host');
+
+        try {
+
+            $patchRequestObject = $this->serializer->deserialize(
+                $this->requestStack->getCurrentRequest()->getContent(),
+                PatchRequestObject::class,
+                'json'
+            );
+
+            $patchedLodging = $this->handler->patchOne($guid, $property, $patchRequestObject);
+
+            return $this->responseBuffer->buildResponse($patchedLodging);
         } catch (Exception $e) {
             $exceptionPath = explode('\\', $e::class);
             $exceptioName = count($exceptionPath) > 0 ? array_pop($exceptionPath) : null;

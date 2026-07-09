@@ -14,6 +14,7 @@ use Api\Interface\ObjectHandlerInterface;
 use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\HostObject;
 use Api\Object\Business\LodgingObject;
+use Api\Object\Business\PatchRequestObject;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 use Exception;
@@ -52,7 +53,7 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             $input->getGuid(),
             $this->contentTranslationStore->getValue('lodging.title', $input->getId(), $input->getTitle()),
             $input->getCover(),
-            array_map(fn($pictureEntity) => $pictureEntity->getPath(), $input->getPictures()->toArray()),
+            array_values(array_map(fn($pictureEntity) => $pictureEntity->getPath(), $input->getPictures()->toArray())),
             $this->contentTranslationStore->getValue('lodging.description', $input->getId(), $input->getDescription()),
             new HostObject($hostEntity->getFirstname() . ' ' . $hostEntity->getLastname(), $hostEntity->getPicture()),
             $input->getRating(),
@@ -60,8 +61,8 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                 $this->contentTranslationStore->getValue('location-area.name', $locationEntity->getArea()->getId(), $locationEntity->getArea()->getName()),
                 $this->contentTranslationStore->getValue('location.name', $locationEntity->getId(), $locationEntity->getName())
             ]),
-            array_map(fn($equipmentEntity) => $this->contentTranslationStore->getValue('equipment.name', $equipmentEntity->getId(), $equipmentEntity->getName()), $input->getEquipments()->toArray()),
-            array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', $tagEntity->getId(), $tagEntity->getName()), $input->getTags()->toArray())
+            array_values(array_map(fn($equipmentEntity) => $this->contentTranslationStore->getValue('equipment.name', $equipmentEntity->getId(), $equipmentEntity->getName()), $input->getEquipments()->toArray())),
+            array_values(array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', $tagEntity->getId(), $tagEntity->getName()), $input->getTags()->toArray()))
         );
     }
 
@@ -176,6 +177,110 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                 throw new BusinessException(500, 'Error occured while creating lodging');
 
             return $this->convertToLodgingObject($newEntity);
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
+    public function patchOne(string $guid, string $property, PatchRequestObject $requestObject): LodgingObject
+    {
+
+        try {
+
+            $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+            if ($lodgingEntity === null)
+                throw new BusinessException(404, 'Lodging not found');
+
+            switch ($property) {
+
+                case 'title':
+                    $lodgingEntity->setTitle($requestObject->value);
+                    break;
+
+                case 'description':
+                    $lodgingEntity->setDescription($requestObject->value);
+                    break;
+
+                case 'cover':
+                    if (!in_array($this->getPictureFileMimeType($requestObject->value), $this->allowedPictureFileMimeTypes))
+                        throw new BusinessException(400, 'The type of the file "' . $requestObject->value . '" is not allowed. Allowed types: ' . implode(', ', $this->allowedPictureFileMimeTypes));
+
+                    $lodgingEntity->setCover($requestObject->value);
+                    break;
+
+                case 'pictures':
+                    if (!is_array($requestObject->value))
+                        throw new BusinessException(400, 'The given value must be an array of picture path (string)');
+
+                    // Remove all current picture entities
+                    foreach ($lodgingEntity->getPictures() as $pictureEntity) {
+                        $lodgingEntity->removePicture($pictureEntity);
+                    }
+
+                    foreach ($requestObject->value as $picturePath) {
+                        if (!in_array($this->getPictureFileMimeType($picturePath), $this->allowedPictureFileMimeTypes))
+                            throw new BusinessException(400, 'The type of the file "' . $picturePath . '" is not allowed. Allowed types: ' . implode(', ', $this->allowedPictureFileMimeTypes));
+
+                        $pictureEntity = new Picture();
+                        $pictureEntity->setPath($picturePath);
+                        $lodgingEntity->addPicture($pictureEntity);
+                    }
+                    break;
+
+                case 'location':
+                    $locationEntity = $this->entityManager->getRepository(Location::class)->findOneBy(['id' => $requestObject->value]);
+                    if ($locationEntity === null)
+                        throw new BusinessException(400, 'The given locationId (' . $requestObject->value . ') is not associated with any location');
+
+                    $lodgingEntity->setLocation($locationEntity);
+                    break;
+
+                case 'tags':
+                    if (!is_array($requestObject->value))
+                        throw new BusinessException(400, 'The given value must be an array of Tag id (int)');
+
+                    // Remove all current tag entities
+                    foreach ($lodgingEntity->getTags() as $tagEntity) {
+                        $lodgingEntity->removeTag($tagEntity);
+                    }
+
+                    $tagEntities = $this->entityManager->getRepository(Tag::class)->findByIds($requestObject->value);
+                    foreach ($requestObject->value as $requestTagId) {
+
+                        $tagEntity = array_find($tagEntities, fn($tagEntity) => $tagEntity->getId() === $requestTagId);
+                        if ($tagEntity === null)
+                            throw new BusinessException(400, 'Unknown tag (' . $requestTagId . ')');
+
+                        $lodgingEntity->addTag($tagEntity);
+                    }
+                    break;
+
+                case 'equipments':
+                    if (!is_array($requestObject->value))
+                        throw new BusinessException(400, 'The given value must be an array of Equipment id (int)');
+
+                    // Remove all current equipment entities
+                    foreach ($lodgingEntity->getEquipments() as $equipmentEntity) {
+                        $lodgingEntity->removeEquipment($equipmentEntity);
+                    }
+
+                    $equipmentEntities = $this->entityManager->getRepository(Equipment::class)->findByIds($requestObject->value);
+                    foreach ($requestObject->value as $requestEquipmentId) {
+
+                        $equipmentEntity = array_find($equipmentEntities, fn($equipmentEntity) => $equipmentEntity->getId() === $requestEquipmentId);
+                        if ($equipmentEntity === null)
+                            throw new BusinessException(400, 'Unknown equipment (' . $requestEquipmentId . ')');
+
+                        $lodgingEntity->addEquipment($equipmentEntity);
+                    }
+                    break;
+
+                default:
+                    throw new BusinessException(400, 'The given property is not allowed for PATCH, allowed properties: title, description, cover, pictures, location (locationId), tags, equipments');
+            }
+            $this->entityManager->flush();
+
+            return $this->convertToLodgingObject($lodgingEntity);
         } catch (Exception $e) {
             throw $e;
         }
