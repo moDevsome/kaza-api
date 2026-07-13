@@ -3,6 +3,7 @@
 namespace Api\Service\Business;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Api\Entity\ContentTranslation;
 use Api\Entity\Tag;
 use Api\Entity\Equipment;
@@ -26,6 +27,21 @@ final class ContentTranslationStore
     private array $contentTranslations = [];
     private array $allowedLangs = [];
     private string $currentTag = 'fr-FR'; //TODO:use the symfony translate system to get the current tag
+
+    private function loadCurrentTag(): void
+    {
+
+        $xUserLangHeader = $this->requestStack->getCurrentRequest()->headers->all()['x-user-lang-tag'] ?? array(null);
+        $currentTag = count($xUserLangHeader) > 0 ? $xUserLangHeader[0] : null;
+
+        if ($currentTag === null)
+            throw new BusinessException(400, 'No user lang tag provided, please check "x-user-lang-tag" header');
+
+        if (!in_array($currentTag, $this->allowedLangs))
+            throw new BusinessException(400, 'The given lang tag "' . $currentTag . '" is not allowed to be used as user lang, please check "x-user-lang-tag" header, allowed tags: ' . implode(', ', $this->allowedLangs));
+
+        $this->currentTag = $currentTag;
+    }
 
     public function setValues(
         string|int $contentId,
@@ -105,10 +121,12 @@ final class ContentTranslationStore
         return $translation !== null ? $translation->getTranslationValue() : $fallBack;
     }
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly EntityManagerInterface $entityManager, private RequestStack $requestStack,)
     {
 
         $this->allowedLangs = (isset($_ENV['ALLOWED_LANGS']) and is_string($_ENV['ALLOWED_LANGS'])) ? StringHelper::explode(',', $_ENV['ALLOWED_LANGS']) : ['fr-FR'];
+
+        $this->loadCurrentTag();
 
         // Load lodging content translations
         $this->contentTranslations = $this->entityManager->getRepository(ContentTranslation::class)->findAll();
