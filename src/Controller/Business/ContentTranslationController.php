@@ -123,6 +123,22 @@ final class ContentTranslationController extends AbstractController
         return $this->responseBuffer->buildResponse(['OK']);
     }
 
+    /**
+     * Return the allowed lang tags
+     * @return JsonResponse
+     */
+    #[
+        Route(
+            '/allowed-lang-tags',
+            name: 'api_lang_tags',
+            methods: ['GET'],
+        )
+    ]
+    public function allowedLangTags(): JsonResponse
+    {
+        return $this->responseBuffer->buildResponse($this->store->getAllowedLangTags());
+    }
+
     public function __construct(
         private readonly ResponseBuffer $responseBuffer,
         private readonly ContentTranslationStore $store,

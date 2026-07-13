@@ -25,7 +25,7 @@ use Api\Helper\StringHelper;
 final class ContentTranslationStore
 {
     private array $contentTranslations = [];
-    private array $allowedLangs = [];
+    private array $allowedLangTags = [];
     private string $currentTag = 'fr-FR'; //TODO:use the symfony translate system to get the current tag
 
     private function loadCurrentTag(): void
@@ -37,10 +37,15 @@ final class ContentTranslationStore
         if ($currentTag === null)
             throw new BusinessException(400, 'No user lang tag provided, please check "x-user-lang-tag" header');
 
-        if (!in_array($currentTag, $this->allowedLangs))
-            throw new BusinessException(400, 'The given lang tag "' . $currentTag . '" is not allowed to be used as user lang, please check "x-user-lang-tag" header, allowed tags: ' . implode(', ', $this->allowedLangs));
+        if (!in_array($currentTag, $this->allowedLangTags))
+            throw new BusinessException(400, 'The given lang tag "' . $currentTag . '" is not allowed to be used as user lang, please check "x-user-lang-tag" header, allowed tags: ' . implode(', ', $this->allowedLangTags));
 
         $this->currentTag = $currentTag;
+    }
+
+    public function getAllowedLangTags(): array
+    {
+        return $this->allowedLangTags;
     }
 
     public function setValues(
@@ -91,7 +96,7 @@ final class ContentTranslationStore
 
         foreach ($values as $value) {
 
-            if (!in_array($value->tag, $this->allowedLangs))
+            if (!in_array($value->tag, $this->allowedLangTags))
                 throw new BusinessException(400, 'The lang tag "' . $value->tag . '" is not allowed');
 
             $currentEntity = array_find($currentEntities, fn($entity) => $entity->getTag() === $value->tag);
@@ -124,7 +129,7 @@ final class ContentTranslationStore
     public function __construct(private readonly EntityManagerInterface $entityManager, private RequestStack $requestStack,)
     {
 
-        $this->allowedLangs = (isset($_ENV['ALLOWED_LANGS']) and is_string($_ENV['ALLOWED_LANGS'])) ? StringHelper::explode(',', $_ENV['ALLOWED_LANGS']) : ['fr-FR'];
+        $this->allowedLangTags = (isset($_ENV['ALLOWED_LANG_TAGS']) and is_string($_ENV['ALLOWED_LANG_TAGS'])) ? StringHelper::explode(',', $_ENV['ALLOWED_LANG_TAGS']) : ['fr-FR'];
 
         $this->loadCurrentTag();
 
