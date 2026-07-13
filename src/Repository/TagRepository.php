@@ -6,6 +6,8 @@ use Api\Entity\Tag;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Connection;
+use Exception;
 
 /**
  * @extends ServiceEntityRepository<Tag>
@@ -26,20 +28,46 @@ class TagRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Count the number of user which have lodging associated with the given tag id
+     * @param int $tagId
+     * @param int $userId
+     * @param bool $negativeLookUp - If TRUE, the query will return the count of tag which are not used by the given user
+     */
+    public function countTagByUserId(int $tagId, int $userId, bool $negativeLookUp = false): int
+    {
+        $userIdOperator = $negativeLookUp === true ? '!=' : '=';
+        try {
+            $countResult = $this->dbConnection->fetchAllAssociative(
+                '
+                select
+                    count(u.id)
+                from
+                    lodging_tag lt
+                left join lodging l on
+                    l.id = lt.lodging_id
+                left join host h on
+                    h.id = l.host_id
+                left join `user` u on u.id = h.user_id
+                where lt.tag_id = :tag_id
+                and u.id ' . $userIdOperator . ' :user_id',
+                [
+                    'tag_id' => $tagId,
+                    'user_id' => $userId
+                ]
+            );
 
-    public function __construct(ManagerRegistry $registry)
+            if (count($countResult) !== 1)
+                throw new Exception(500, 'count($countResult) !== 1');
+
+            return $countResult[0]['count(u.id)'];
+        } catch (Exception $e) {
+            throw new Exception('countTagByUserId error: ' . $e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function __construct(ManagerRegistry $registry, private readonly Connection $dbConnection)
     {
         parent::__construct($registry, Tag::class);
     }
-
-
-    //    public function findOneBySomeField($value): ?Tag
-    //    {
-    //        return $this->createQueryBuilder('t')
-    //            ->andWhere('t.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }

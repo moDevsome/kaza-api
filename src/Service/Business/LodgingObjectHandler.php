@@ -60,12 +60,44 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             new HostObject($hostEntity->getFirstname() . ' ' . $hostEntity->getLastname(), $hostEntity->getPicture()),
             $input->getRating(),
             implode(' - ', [
-                $this->contentTranslationStore->getValue('location-area.name', $locationEntity->getArea()->getId(), $locationEntity->getArea()->getName()),
+                $this->contentTranslationStore->getValue('locationarea.name', $locationEntity->getArea()->getId(), $locationEntity->getArea()->getName()),
                 $this->contentTranslationStore->getValue('location.name', $locationEntity->getId(), $locationEntity->getName())
             ]),
             array_values(array_map(fn($equipmentEntity) => $this->contentTranslationStore->getValue('equipment.name', $equipmentEntity->getId(), $equipmentEntity->getName()), $input->getEquipments()->toArray())),
             array_values(array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', $tagEntity->getId(), $tagEntity->getName()), $input->getTags()->toArray()))
         );
+    }
+
+    /**
+     * Check if the user id belong to the host of the lodging
+     * Throw an exception if the user id is not the lodging owner
+     *
+     * @param int $userId
+     * @param ?Lodging $lodgingEntity
+     * @param ?string $lodgingId - Must be provided if $lodgingEntity is null
+     * @throws BusinessException
+     * @return void
+     */
+    public function checkHost(int $userId, Lodging|null $lodgingEntity = null, string|null  $lodgingId = null): void
+    {
+
+        if ($lodgingEntity === null and $lodgingId === null)
+            throw new BusinessException(500, 'Lodging id not provided');
+
+        if ($lodgingEntity === null) {
+            $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['id' => $lodgingId]);
+            if ($lodgingEntity === null)
+                throw new BusinessException(400, 'Lodging not found');
+        }
+
+        // Get the Host associated with the current user
+        $hostEntity = $this->entityManager->getRepository(Host::class)->findOneByUserId($userId);
+        if ($hostEntity === null)
+            throw new BusinessException(500, 'Host not found');
+
+        // Check if the lodging is associated with the current user
+        if ($lodgingEntity->getHost()->getId() !== $hostEntity->getId())
+            throw new BusinessException(403,  'Incorrect lodging host');
     }
 
     public function loadList(array $criterias = []): array
