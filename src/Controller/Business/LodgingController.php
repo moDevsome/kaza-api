@@ -213,6 +213,10 @@ final class LodgingController extends AbstractController
 
         $patchedLodging = $this->handler->patchOne($guid, $property, $patchRequestObject);
 
+        if (!in_array($property, ['title', 'description']) and $patchRequestObject->autoTranslate === true) {
+            $this->responseBuffer->addWarning('autoTranslate has effect only for "title" and "description" properties');
+        }
+
         return $this->responseBuffer->buildResponse($patchedLodging);
     }
 

@@ -8,10 +8,13 @@ use Api\Entity\Location;
 use Api\Entity\Lodging;
 use Api\Entity\Picture;
 use Api\Entity\Tag;
+use Api\Enum\Business\ContentTranslationLodgingProperty;
+use Api\Enum\Business\ContentTranslationType;
 use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
 use Api\Interface\ObjectHandlerInterface;
 use Api\Object\Business\AddElementRequestObject;
+use Api\Object\Business\ContentTranslationRequestValueObject;
 use Api\Object\Business\RemoveElementRequestObject;
 use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\HostObject;
@@ -236,14 +239,18 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             if ($lodgingEntity === null)
                 throw new BusinessException(404, 'Lodging not found');
 
+            $translateProperty = null;
+
             switch ($property) {
 
                 case 'title':
                     $lodgingEntity->setTitle($requestObject->value);
+                    $translateProperty = ContentTranslationLodgingProperty::Title;
                     break;
 
                 case 'description':
                     $lodgingEntity->setDescription($requestObject->value);
+                    $translateProperty = ContentTranslationLodgingProperty::Description;
                     break;
 
                 case 'cover':
@@ -324,6 +331,12 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                     throw new BusinessException(400, 'The given property is not allowed for PATCH, allowed properties: title, description, cover, pictures, location (locationId), tags, equipments');
             }
             $this->entityManager->flush();
+
+            if ($translateProperty !== null and $requestObject->autoTranslate === true) {
+                $this->contentTranslationStore->setValues($lodgingEntity->getId(), ContentTranslationType::Lodging, $translateProperty, [
+                    new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $requestObject->value)
+                ]);
+            }
 
             return $this->convertToLodgingObject($lodgingEntity);
         } catch (Exception $e) {

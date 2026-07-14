@@ -43,6 +43,11 @@ final class ContentTranslationStore
         $this->currentTag = $currentTag;
     }
 
+    public function getCurrentTag(): string
+    {
+        return $this->currentTag;
+    }
+
     public function getAllowedLangTags(): array
     {
         return $this->allowedLangTags;
