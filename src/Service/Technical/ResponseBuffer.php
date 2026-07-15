@@ -2,6 +2,7 @@
 
 namespace Api\Service\Technical;
 
+use Api\Helper\CorsHelper;
 use Api\Object\Technical\ResponseBufferObject;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -35,6 +36,8 @@ final class ResponseBuffer
 
     public function buildResponse(array|object|null $datas): JsonResponse
     {
+        foreach (CorsHelper::getHeaders() as $headerName => $headerValue)
+            $this->addHeader($headerName, $headerValue);
 
         $jsonResponse = new JsonResponse(new ResponseBufferObject($datas, $this->errors, $this->warnings), $this->statusCode, $this->headers);
         $jsonResponse->setEncodingOptions(JSON_UNESCAPED_UNICODE);

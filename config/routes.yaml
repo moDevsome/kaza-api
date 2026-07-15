@@ -13,3 +13,11 @@ controllers:
 # config/routes.yaml
 auth_login_check:
     path: /auth/login_check
+
+# Handle browser preflight request
+# hhttps://fetch.spec.whatwg.org/#http-requests
+api_cors_preflight:
+    path: '/{route_path}'
+    controller: Api\Controller\Technical\CorsController::preflight
+    methods: ['OPTIONS']
+    condition: '(request.headers.all()["access-control-request-method"] ?? null) != null and (request.headers.all()["access-control-request-headers"] ?? null) != null'
