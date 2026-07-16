@@ -2,18 +2,18 @@
 
 namespace Api\Entity;
 
-use Api\Repository\HostRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Ulid;
+use Api\Repository\HostRepository;
 
 #[ORM\Entity(repositoryClass: HostRepository::class)]
 class Host
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'ulid', unique: true)]
+    private Ulid $id;
 
     #[ORM\Column(length: 56)]
     private ?string $Lastname = null;
@@ -36,10 +36,12 @@ class Host
 
     public function __construct()
     {
+        $this->id = new Ulid();
+
         $this->lodgings = new ArrayCollection();
     }
 
-    public function getId(): ?int
+    public function getId(): Ulid
     {
         return $this->id;
     }

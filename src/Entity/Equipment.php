@@ -2,18 +2,18 @@
 
 namespace Api\Entity;
 
-use Api\Repository\EquipmentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Ulid;
+use Api\Repository\EquipmentRepository;
 
 #[ORM\Entity(repositoryClass: EquipmentRepository::class)]
 class Equipment
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'ulid', unique: true)]
+    private Ulid $id;
 
     #[ORM\Column(length: 80)]
     private ?string $name = null;
@@ -26,10 +26,12 @@ class Equipment
 
     public function __construct()
     {
+        $this->id = new Ulid();
+
         $this->lodging = new ArrayCollection();
     }
 
-    public function getId(): ?int
+    public function getId(): Ulid
     {
         return $this->id;
     }
