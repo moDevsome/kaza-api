@@ -2,6 +2,8 @@
 
 namespace Api\Service\Business;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use Api\Entity\Equipment;
 use Api\Entity\Host;
 use Api\Entity\Location;
@@ -20,9 +22,6 @@ use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\HostObject;
 use Api\Object\Business\LodgingObject;
 use Api\Object\Business\PatchRequestObject;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Uid\Uuid;
-use Exception;
 
 /**
  * This class is made to load one or more LoadgingObject from the database
@@ -55,11 +54,11 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
         $locationEntity = $input->getLocation();
 
         return new LodgingObject(
-            $input->getGuid(),
-            $this->contentTranslationStore->getValue('lodging.title', $input->getId(), $input->getTitle()),
+            $input->getId(),
+            $this->contentTranslationStore->getValue('lodging.title', 0, $input->getTitle()),
             $input->getCover(),
             array_values(array_map(fn($pictureEntity) => $pictureEntity->getPath(), $input->getPictures()->toArray())),
-            $this->contentTranslationStore->getValue('lodging.description', $input->getId(), $input->getDescription()),
+            $this->contentTranslationStore->getValue('lodging.description', 0, $input->getDescription()),
             new HostObject($hostEntity->getFirstname() . ' ' . $hostEntity->getLastname(), $hostEntity->getPicture()),
             $input->getRating(),
             implode(' - ', [
@@ -111,10 +110,10 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
         );
     }
 
-    public function loadOne(string|int $guid): LodgingObject|null
+    public function loadOne(string $id): LodgingObject|null
     {
 
-        $lodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        $lodging = $this->entityManager->getRepository(Lodging::class)->findOneById($id);
         if (!$lodging)
             return null;
 
@@ -174,8 +173,6 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             if (isset($locationEntity))
                 $newEntity->setLocation($locationEntity);
 
-            $newEntity->setGuid(Uuid::v7());
-
             // Add each given tag
             if (is_array($createRequest->tagIds) and count($createRequest->tagIds) > 0) {
                 $tagEntities = $this->entityManager->getRepository(Tag::class)->findByIds($createRequest->tagIds);
@@ -224,18 +221,18 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
     /**
      * Patch a Lodging objects
      *
-     * @param string $guid
+     * @param string $id
      * @param string $property
      * @param PatchRequestObject $requestObject
      * @throws BusinessException
      * @return LodgingObject
      */
-    public function patchOne(string $guid, string $property, PatchRequestObject $requestObject): LodgingObject
+    public function patchOne(string $id, string $property, PatchRequestObject $requestObject): LodgingObject
     {
 
         try {
 
-            $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+            $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneById($id);
             if ($lodgingEntity === null)
                 throw new BusinessException(404, 'Lodging not found');
 
@@ -347,15 +344,15 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
     /**
      * Add a Picture, a Tag or a Equipment to a Lodging object
      *
-     * @param string $guid
+     * @param string $lodgingId
      * @param string $element
      * @param AddElementRequestObject $requestObject
      * @throws BusinessException
      * @return LodgingObject
      */
-    public function addElement(string $guid, string $element, AddElementRequestObject $requestObject): LodgingObject
+    public function addElement(string $lodgingId, string $element, AddElementRequestObject $requestObject): LodgingObject
     {
-        $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneById($lodgingId);
         if ($lodgingEntity === null)
             throw new BusinessException(404, 'Lodging not found');
 
@@ -410,15 +407,15 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
     /**
      * Remove a Picture, a Tag or a Equipment from a Lodging object
      *
-     * @param string $guid
+     * @param string $lodgingId
      * @param string $element
      * @param RemoveElementRequestObject $requestObject
      * @throws BusinessException
      * @return LodgingObject
      */
-    public function removeElement(string $guid, string $element, RemoveElementRequestObject $requestObject): LodgingObject
+    public function removeElement(string $lodgingId, string $element, RemoveElementRequestObject $requestObject): LodgingObject
     {
-        $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        $lodgingEntity = $this->entityManager->getRepository(Lodging::class)->findOneById($lodgingId);
         if ($lodgingEntity === null)
             throw new BusinessException(404, 'Lodging not found');
 

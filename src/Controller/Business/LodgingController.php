@@ -2,6 +2,12 @@
 
 namespace Api\Controller\Business;
 
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\SerializerInterface;
+use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\Host;
 use Api\Entity\Lodging;
 use Api\Exception\BusinessException;
@@ -11,13 +17,6 @@ use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\PatchRequestObject;
 use Api\Object\Business\RemoveElementRequestObject;
 use Api\Service\Technical\ResponseBuffer;
-use Exception;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
-use Doctrine\ORM\EntityManagerInterface;
 
 final class LodgingController extends AbstractController
 {
@@ -53,19 +52,16 @@ final class LodgingController extends AbstractController
 
     /**
      * Return one lodging
-     * @param string $guid
+     * @param string $id
      * @throws BusinessException
      * @return JsonResponse
      */
-    #[Route('/lodging/{guid}', name: 'api_lodging')]
-    public function lodging(string $guid): JsonResponse
+    #[Route('/lodging/{id}', name: 'api_lodging')]
+    public function lodging(string $id): JsonResponse
     {
-        $errorMessage = 'Lodging (' . $guid . ') not found';
+        $errorMessage = 'Lodging (' . $id . ') not found';
 
-        if (!ctype_alnum($guid))
-            throw new BusinessException(404,  $errorMessage);
-
-        $lodging = $this->handler->loadOne($guid);
+        $lodging = $this->handler->loadOne($id);
 
         if ($lodging === null)
             throw new BusinessException(404,  $errorMessage);
@@ -103,28 +99,25 @@ final class LodgingController extends AbstractController
     /**
      * Add a Picture, a Tag or Equipement to a Lodging
      * Fallback to "removeElement" method if the route does not match
-     * @param string $guid
+     * @param string $id - Id of the lodging
      * @param string $element - "picture", "tag" or "equipment"
      * @throws BusinessException
      * @return JsonResponse
      */
     #[
         Route(
-            '/auth/lodging/{guid}/add-{element}',
+            '/auth/lodging/{id}/add-{element}',
             name: 'api_lodging_add_element',
             methods: ['POST'],
             condition: 'params["element"] in ["picture", "tag", "equipment"]',
             priority: 8
         )
     ]
-    public function addElement(string $guid, string $element): JsonResponse
+    public function addElement(string $id, string $element): JsonResponse
     {
-        if (!ctype_alnum($guid))
-            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
-
-        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['id' => $id]);
         if ($currentLodging === null)
-            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+            throw new BusinessException(404,  'Lodging (' . $id . ') not found');
 
         $this->checkOwner($currentLodging);
 
@@ -134,7 +127,7 @@ final class LodgingController extends AbstractController
             'json'
         );
 
-        $updatedLodging = $this->handler->addElement($guid, $element, $addElementRequestObject);
+        $updatedLodging = $this->handler->addElement($id, $element, $addElementRequestObject);
 
         return $this->responseBuffer->buildResponse($updatedLodging);
     }
@@ -142,29 +135,26 @@ final class LodgingController extends AbstractController
     /**
      * Remove a Picture, a Tag or Equipement from a Lodging
      * Fallback to "patch" method if the route does not match
-     * @param string $guid
+     * @param string $id - Id of the lodging
      * @param string $element - "picture", "tag" or "equipment"
      * @throws BusinessException
      * @return JsonResponse
      */
     #[
         Route(
-            '/auth/lodging/{guid}/remove-{element}',
+            '/auth/lodging/{id}/remove-{element}',
             name: 'api_lodging_remove_element',
             methods: ['DELETE'],
             condition: 'params["element"] in ["picture", "tag", "equipment"]',
             priority: 9
         )
     ]
-    public function removeElement(string $guid, string $element): JsonResponse
+    public function removeElement(string $id, string $element): JsonResponse
     {
 
-        if (!ctype_alnum($guid))
-            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
-
-        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneById($id);
         if ($currentLodging === null)
-            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+            throw new BusinessException(404,  'Lodging (' . $id . ') not found');
 
         $this->checkOwner($currentLodging);
 
@@ -174,34 +164,32 @@ final class LodgingController extends AbstractController
             'json'
         );
 
-        $updatedLodging = $this->handler->removeElement($guid, $element, $removeElementRequestObject);
+        $updatedLodging = $this->handler->removeElement($id, $element, $removeElementRequestObject);
 
         return $this->responseBuffer->buildResponse($updatedLodging);
     }
 
     /**
      * Update one lodging using the PATCH method and return the full object
-     * @param string $guid
+     * @param string $id
      * @param string $property - The property name
      * @throws BusinessException
      * @return JsonResponse
      */
     #[
         Route(
-            '/auth/lodging/{guid}/{property}',
+            '/auth/lodging/{id}/{property}',
             name: 'api_patch_lodging',
             methods: ['PATCH'],
             priority: 10
         )
     ]
-    public function patch(string $guid, string $property): JsonResponse
+    public function patch(string $id, string $property): JsonResponse
     {
-        if (!ctype_alnum($guid))
-            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
 
-        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['guid' => $guid]);
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['id' => $id]);
         if ($currentLodging === null)
-            throw new BusinessException(404,  'Lodging (' . $guid . ') not found');
+            throw new BusinessException(404,  'Lodging (' . $id . ') not found');
 
         $this->checkOwner($currentLodging);
 
@@ -211,7 +199,7 @@ final class LodgingController extends AbstractController
             'json'
         );
 
-        $patchedLodging = $this->handler->patchOne($guid, $property, $patchRequestObject);
+        $patchedLodging = $this->handler->patchOne($id, $property, $patchRequestObject);
 
         if (!in_array($property, ['title', 'description']) and $patchRequestObject->autoTranslate === true) {
             $this->responseBuffer->addWarning('autoTranslate has effect only for "title" and "description" properties');

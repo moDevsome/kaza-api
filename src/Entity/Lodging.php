@@ -2,21 +2,19 @@
 
 namespace Api\Entity;
 
-use Api\Repository\LodgingRepository;
-use BcMath\Number;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Ulid;
+use Api\Repository\LodgingRepository;
 
-#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_GUID', fields: ['guid'])]
 #[ORM\Entity(repositoryClass: LodgingRepository::class)]
 class Lodging
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'ulid', unique: true)]
+    private Ulid $id;
 
     #[ORM\Column(length: 255)]
     private ?string $title = null;
@@ -40,9 +38,6 @@ class Lodging
     #[ORM\JoinColumn(nullable: false)]
     private ?Host $Host = null;
 
-    #[ORM\Column(type: Types::GUID)]
-    private ?string $guid = null;
-
     #[ORM\ManyToOne(inversedBy: 'lodgings')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Location $location = null;
@@ -61,12 +56,14 @@ class Lodging
 
     public function __construct()
     {
+        $this->id = new Ulid();
+
         $this->pictures = new ArrayCollection();
         $this->equipment = new ArrayCollection();
         $this->tag = new ArrayCollection();
     }
 
-    public function getId(): ?int
+    public function getId(): Ulid
     {
         return $this->id;
     }
@@ -157,18 +154,6 @@ class Lodging
     public function setRating(int $rating): static
     {
         $this->rating = $rating;
-
-        return $this;
-    }
-
-    public function getGuid(): ?string
-    {
-        return $this->guid;
-    }
-
-    public function setGuid(string $guid): static
-    {
-        $this->guid = $guid;
 
         return $this;
     }

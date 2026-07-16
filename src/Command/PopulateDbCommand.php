@@ -10,8 +10,8 @@ use Api\Entity\Lodging;
 use Api\Entity\Picture;
 use Api\Entity\Tag;
 use Api\Entity\User;
-use Api\Object\LodgingObject;
-use Api\Object\HostObject;
+use Api\Object\Business\LodgingObject;
+use Api\Object\Business\HostObject;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -259,7 +259,6 @@ class PopulateDbCommand extends Command
             $lodgingEntity->setTitle($testLodging->title);
             $lodgingEntity->setCover($testLodging->cover);
             $lodgingEntity->setDescription($testLodging->description);
-            $lodgingEntity->setGuid($testLodging->id);
             $lodgingEntity->setHost($hostEntity);
             $lodgingEntity->setRating($testLodging->rating);
             $lodgingEntity->setLocation($locationEntity);
