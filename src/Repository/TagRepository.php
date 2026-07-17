@@ -30,11 +30,11 @@ class TagRepository extends ServiceEntityRepository
 
     /**
      * Count the number of user which have lodging associated with the given tag id
-     * @param int $tagId
+     * @param string $tagId
      * @param int $userId
      * @param bool $negativeLookUp - If TRUE, the query will return the count of tag which are not used by the given user
      */
-    public function countTagByUserId(int $tagId, int $userId, bool $negativeLookUp = false): int
+    public function countTagByUserId(string $tagId, int $userId, bool $negativeLookUp = false): int
     {
         $userIdOperator = $negativeLookUp === true ? '!=' : '=';
         try {

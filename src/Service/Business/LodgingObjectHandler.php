@@ -65,8 +65,8 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                 $this->contentTranslationStore->getValue('locationarea.name', $locationEntity->getArea()->getId(), $locationEntity->getArea()->getName()),
                 $this->contentTranslationStore->getValue('location.name', $locationEntity->getId(), $locationEntity->getName())
             ]),
-            array_values(array_map(fn($equipmentEntity) => $this->contentTranslationStore->getValue('equipment.name', $equipmentEntity->getId(), $equipmentEntity->getName()), $input->getEquipments()->toArray())),
-            array_values(array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', $tagEntity->getId(), $tagEntity->getName()), $input->getTags()->toArray()))
+            array_values(array_map(fn($equipmentEntity) => $this->contentTranslationStore->getValue('equipment.name', 0, $equipmentEntity->getName()), $input->getEquipments()->toArray())),
+            array_values(array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', 0, $tagEntity->getName()), $input->getTags()->toArray()))
         );
     }
 
