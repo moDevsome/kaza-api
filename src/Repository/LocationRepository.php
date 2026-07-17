@@ -16,11 +16,11 @@ class LocationRepository extends ServiceEntityRepository
 
     /**
      * Count the number of user which have lodging associated with the given location id
-     * @param int $locationId
+     * @param string $locationId
      * @param int $userId
      * @param bool $negativeLookUp - If TRUE, the query will return the count of location which are not used by the given user
      */
-    public function countLocationByUserId(int $locationId, int $userId, bool $negativeLookUp = false): int
+    public function countLocationByUserId(string $locationId, int $userId, bool $negativeLookUp = false): int
     {
         $userIdOperator = $negativeLookUp === true ? '!=' : '=';
         try {

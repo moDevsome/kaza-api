@@ -134,7 +134,7 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
 
             // Get the Location entity associated with the given location id if not null
             if ($createRequest->locationId !== null) {
-                $locationEntity = $this->entityManager->getRepository(Location::class)->findOneBy(['id' => $createRequest->locationId]);
+                $locationEntity = $this->entityManager->getRepository(Location::class)->findOneById($createRequest->locationId);
                 if ($locationEntity === null)
                     throw new BusinessException(400, 'The given locationId (' . $createRequest->locationId . ') is not associated with any location');
             }
