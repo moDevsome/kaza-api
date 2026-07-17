@@ -2,8 +2,9 @@
 
 namespace Api\Entity;
 
-use Api\Repository\ContentTranslationRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Ulid;
+use Api\Repository\ContentTranslationRepository;
 
 #[ORM\Entity(repositoryClass: ContentTranslationRepository::class)]
 class ContentTranslation
@@ -22,8 +23,8 @@ class ContentTranslation
     #[ORM\Column(length: 6)]
     private ?string $tag = null;
 
-    #[ORM\Column]
-    private ?int $contentId = null;
+    #[ORM\Column(type: 'ulid')]
+    private ?Ulid $contentId = null;
 
     public function getId(): ?int
     {
@@ -66,14 +67,14 @@ class ContentTranslation
         return $this;
     }
 
-    public function getContentId(): ?int
+    public function getContentId(): ?Ulid
     {
         return $this->contentId;
     }
 
-    public function setContentId(int $content_id): static
+    public function setContentId(Ulid $contentId): static
     {
-        $this->contentId = $content_id;
+        $this->contentId = $contentId;
 
         return $this;
     }

@@ -19,7 +19,7 @@ final class TagObjectHandler implements ObjectHandlerInterface
         // TODO:handle translation
         return new TagObject(
             $input->getId(),
-            $this->contentTranslationStore->getValue('tag.name', 0, $input->getName()),
+            $this->contentTranslationStore->getValue('tag.name', $input->getId(), $input->getName()),
         );
     }
 

@@ -24,7 +24,7 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
         // TODO:handle translation
         return new LocationAreaObject(
             $input->getId(),
-            $this->contentTranslationStore->getValue('locationarea.name', 0, $input->getName()),
+            $this->contentTranslationStore->getValue('locationarea.name', $input->getId(), $input->getName()),
         );
     }
 

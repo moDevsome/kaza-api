@@ -55,18 +55,18 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
 
         return new LodgingObject(
             $input->getId(),
-            $this->contentTranslationStore->getValue('lodging.title', 0, $input->getTitle()),
+            $this->contentTranslationStore->getValue('lodging.title', $input->getId(), $input->getTitle()),
             $input->getCover(),
             array_values(array_map(fn($pictureEntity) => $pictureEntity->getPath(), $input->getPictures()->toArray())),
-            $this->contentTranslationStore->getValue('lodging.description', 0, $input->getDescription()),
+            $this->contentTranslationStore->getValue('lodging.description', $input->getId(), $input->getDescription()),
             new HostObject($hostEntity->getFirstname() . ' ' . $hostEntity->getLastname(), $hostEntity->getPicture()),
             $input->getRating(),
             implode(' - ', [
                 $this->contentTranslationStore->getValue('locationarea.name', $locationEntity->getArea()->getId(), $locationEntity->getArea()->getName()),
                 $this->contentTranslationStore->getValue('location.name', $locationEntity->getId(), $locationEntity->getName())
             ]),
-            array_values(array_map(fn($equipmentEntity) => $this->contentTranslationStore->getValue('equipment.name', 0, $equipmentEntity->getName()), $input->getEquipments()->toArray())),
-            array_values(array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', 0, $tagEntity->getName()), $input->getTags()->toArray()))
+            array_values(array_map(fn($equipmentEntity) => $this->contentTranslationStore->getValue('equipment.name', $equipmentEntity->getId(), $equipmentEntity->getName()), $input->getEquipments()->toArray())),
+            array_values(array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', $tagEntity->getId(), $tagEntity->getName()), $input->getTags()->toArray()))
         );
     }
 
