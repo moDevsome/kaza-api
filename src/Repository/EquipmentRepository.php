@@ -30,11 +30,11 @@ class EquipmentRepository extends ServiceEntityRepository
 
     /**
      * Count the number of user which have lodging associated with the given equipment id
-     * @param int $equipmentId
+     * @param string $equipmentId
      * @param int $userId
      * @param bool $negativeLookUp - If TRUE, the query will return the count of equipment which are not used by the given user
      */
-    public function countEquipmentByUserId(int $equipmentId, int $userId, bool $negativeLookUp = false): int
+    public function countEquipmentByUserId(string $equipmentId, int $userId, bool $negativeLookUp = false): int
     {
         $userIdOperator = $negativeLookUp === true ? '!=' : '=';
         try {
