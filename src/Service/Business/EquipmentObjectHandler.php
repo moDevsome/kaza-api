@@ -5,9 +5,12 @@ namespace Api\Service\Business;
 use Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\Equipment;
+use Api\Enum\Business\ContentTranslationEquipmentProperty;
+use Api\Enum\Business\ContentTranslationType;
 use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
 use Api\Interface\ObjectHandlerInterface;
+use Api\Object\Business\ContentTranslationRequestValueObject;
 use Api\Object\Business\CreateEquipmentRequestObject;
 use Api\Object\Business\EquipmentObject;
 use Api\Object\Business\PatchRequestObject;
@@ -43,10 +46,11 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
     /**
      * Create one equipment then return the object
      * @param CreateEquipmentRequestObject $createRequest
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return EquipmentObject
      */
-    public function createOne(CreateEquipmentRequestObject $createRequest): EquipmentObject
+    public function createOne(CreateEquipmentRequestObject $createRequest, bool $applyTranslation): EquipmentObject
     {
 
         //TODO:check if the name already exist
@@ -61,6 +65,18 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
             if ($newEntity === null)
                 throw new BusinessException(500, 'Error occured while creating equipment');
 
+            if ($applyTranslation === true) {
+
+                $this->contentTranslationStore->setValues(
+                    $newEntity->getId(),
+                    ContentTranslationType::Equipment,
+                    ContentTranslationEquipmentProperty::Name,
+                    [
+                        new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $createRequest->name)
+                    ]
+                );
+            }
+
             return $this->convertToEquipmentObject($newEntity);
         } catch (Exception $e) {
             throw $e;
@@ -72,10 +88,11 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
      *
      * @param string $id
      * @param CreateEquipmentRequestObject $requestObject
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return EquipmentObject
      */
-    public function updateOne(string $id, CreateEquipmentRequestObject $requestObject): EquipmentObject
+    public function updateOne(string $id, CreateEquipmentRequestObject $requestObject, bool $applyTranslation): EquipmentObject
     {
 
         try {
@@ -84,14 +101,20 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
             if ($equipmentEntity === null)
                 throw new BusinessException(404, 'Equipment not found');
 
-            $translateProperty = null;
-
             $equipmentEntity->setName($requestObject->name);
             $this->entityManager->persist($equipmentEntity);
             $this->entityManager->flush();
 
-            if ($translateProperty !== null and $requestObject->autoTranslate === true) {
-                //TODO:handle translation
+            if ($applyTranslation === true) {
+
+                $this->contentTranslationStore->setValues(
+                    $equipmentEntity->getId(),
+                    ContentTranslationType::Equipment,
+                    ContentTranslationEquipmentProperty::Name,
+                    [
+                        new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $requestObject->name)
+                    ]
+                );
             }
 
             return $this->convertToEquipmentObject($equipmentEntity);
@@ -119,7 +142,7 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
         }
     }
 
-    public function patchOne(string $id, string $property, PatchRequestObject $requestObject): EquipmentObject
+    public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): EquipmentObject
     {
         return new EquipmentObject('', '');
     }

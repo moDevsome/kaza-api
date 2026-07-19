@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final class TagController extends AbstractController
 {
+    private array $queryParams;
 
     public function __construct(
         private readonly ResponseBuffer $responseBuffer,
@@ -24,7 +25,9 @@ final class TagController extends AbstractController
         private readonly SerializerInterface $serializer,
         private readonly EntityManagerInterface $entityManager,
         protected readonly RequestStack $requestStack,
-    ) {}
+    ) {
+        $this->queryParams = $this->requestStack->getCurrentRequest()->query->all();
+    }
 
     /**
      * Return a list tag
@@ -70,7 +73,10 @@ final class TagController extends AbstractController
             'json'
         );
 
-        $createdTag = $this->handler->createOne($createTagRequestObject);
+        $createdTag = $this->handler->createOne(
+            $createTagRequestObject,
+            isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true
+        );
 
         $this->responseBuffer->addHeader('Location', '/tag/' . $createdTag->id);
         $this->responseBuffer->setStatusCode(201);
@@ -102,7 +108,11 @@ final class TagController extends AbstractController
         if ($count !== 0)
             throw new BusinessException(400, 'This tag could not be updated by the current user because it is associated with lodging which not belong to the current user');
 
-        $updatedTag = $this->handler->updateOne($id, $createTagRequestObject);
+        $updatedTag = $this->handler->updateOne(
+            $id,
+            $createTagRequestObject,
+            isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true
+        );
         return $this->responseBuffer->buildResponse($updatedTag);
     }
 

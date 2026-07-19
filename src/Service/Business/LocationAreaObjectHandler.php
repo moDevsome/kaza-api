@@ -78,10 +78,11 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
      *
      * @param string $id
      * @param CreateLocationAreaRequestObject $requestObject
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return LocationAreaObject
      */
-    public function updateOne(string $id, CreateLocationAreaRequestObject $requestObject): LocationAreaObject
+    public function updateOne(string $id, CreateLocationAreaRequestObject $requestObject, bool $applyTranslation): LocationAreaObject
     {
 
         try {
@@ -96,11 +97,9 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
             $this->entityManager->persist($locationAreaEntity);
             $this->entityManager->flush();
 
-            /*
-            if ($translateProperty !== null and $requestObject->autoTranslate === true) {
+            if ($translateProperty !== null and $applyTranslation === true) {
                 //TODO:handle translation
             }
-                */
 
             return $this->convertToLocationAreaObject($locationAreaEntity);
         } catch (Exception $e) {
@@ -127,7 +126,7 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
         }
     }
 
-    public function patchOne(string $id, string $property, PatchRequestObject $requestObject): LocationAreaObject
+    public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): LocationAreaObject
     {
         return new LocationAreaObject('', '');
     }

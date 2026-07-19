@@ -20,13 +20,17 @@ use Api\Service\Technical\ResponseBuffer;
 
 final class LodgingController extends AbstractController
 {
+    private array $queryParams;
+
     public function __construct(
         private readonly ResponseBuffer $responseBuffer,
         private readonly LodgingObjectHandler $handler,
         private readonly EntityManagerInterface $entityManager,
         protected readonly RequestStack $requestStack,
         private readonly SerializerInterface $serializer
-    ) {}
+    ) {
+        $this->queryParams = $this->requestStack->getCurrentRequest()->query->all();
+    }
 
     /**
      * Check if the current user is the updated lodging owner
@@ -53,10 +57,9 @@ final class LodgingController extends AbstractController
     public function index(): JsonResponse
     {
 
-        $queryParams = $this->requestStack->getCurrentRequest()->query->all();
-        $criterias = array_filter($queryParams, fn($queryParamKey) => in_array($queryParamKey, ['hostId', 'title']), 2);
-        $limitCount = $queryParams['limitCount'] ?? 40;
-        $limitOffset = $queryParams['limitOffset'] ?? 0;
+        $criterias = array_filter($this->queryParams, fn($queryParamKey) => in_array($queryParamKey, ['hostId', 'title']), 2);
+        $limitCount = $this->queryParams['limitCount'] ?? 40;
+        $limitOffset = $this->queryParams['limitOffset'] ?? 0;
 
         return $this->responseBuffer->buildResponse($this->handler->loadList($criterias, $limitCount, $limitOffset));
     }
@@ -100,7 +103,11 @@ final class LodgingController extends AbstractController
         if ($hostEntity === null)
             throw new BusinessException(500, 'Host not found');
 
-        $createdLodging = $this->handler->createOne($createLodgingRequestObject, $hostEntity);
+        $createdLodging = $this->handler->createOne(
+            $createLodgingRequestObject,
+            $hostEntity,
+            isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true
+        );
 
         $this->responseBuffer->addHeader('Location', '/lodging/' . $createdLodging->id);
         $this->responseBuffer->setStatusCode(201);
@@ -198,7 +205,7 @@ final class LodgingController extends AbstractController
     public function patch(string $id, string $property): JsonResponse
     {
 
-        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['id' => $id]);
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneById($id);
         if ($currentLodging === null)
             throw new BusinessException(404,  'Lodging (' . $id . ') not found');
 
@@ -210,10 +217,11 @@ final class LodgingController extends AbstractController
             'json'
         );
 
-        $patchedLodging = $this->handler->patchOne($id, $property, $patchRequestObject);
+        $applyTranslation = isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true;
+        $patchedLodging = $this->handler->patchOne($id, $property, $patchRequestObject, $applyTranslation);
 
-        if (!in_array($property, ['title', 'description']) and $patchRequestObject->autoTranslate === true) {
-            $this->responseBuffer->addWarning('autoTranslate has effect only for "title" and "description" properties');
+        if (!in_array($property, ['title', 'description']) and $applyTranslation === true) {
+            $this->responseBuffer->addWarning('applyTranslation has effect only for "title" and "description" properties');
         }
 
         return $this->responseBuffer->buildResponse($patchedLodging);

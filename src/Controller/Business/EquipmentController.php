@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final class EquipmentController extends AbstractController
 {
+    private array $queryParams;
 
     public function __construct(
         private readonly ResponseBuffer $responseBuffer,
@@ -24,7 +25,9 @@ final class EquipmentController extends AbstractController
         private readonly SerializerInterface $serializer,
         private readonly EntityManagerInterface $entityManager,
         protected readonly RequestStack $requestStack,
-    ) {}
+    ) {
+        $this->queryParams = $this->requestStack->getCurrentRequest()->query->all();
+    }
 
     /**
      * Return a list of equipment
@@ -70,7 +73,10 @@ final class EquipmentController extends AbstractController
             'json'
         );
 
-        $createdEquipment = $this->handler->createOne($createEquipmentRequestObject);
+        $createdEquipment = $this->handler->createOne(
+            $createEquipmentRequestObject,
+            isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true
+        );
 
         $this->responseBuffer->addHeader('Location', '/equipment/' . $createdEquipment->id);
         $this->responseBuffer->setStatusCode(201);
@@ -102,7 +108,11 @@ final class EquipmentController extends AbstractController
         if ($count !== 0)
             throw new BusinessException(400, 'This equipment could not be updated by the current user because it is associated with lodging which not belong to the current user');
 
-        $updatedEquipment = $this->handler->updateOne($id, $createEquipmentRequestObject);
+        $updatedEquipment = $this->handler->updateOne(
+            $id,
+            $createEquipmentRequestObject,
+            isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true
+        );
         return $this->responseBuffer->buildResponse($updatedEquipment);
     }
 

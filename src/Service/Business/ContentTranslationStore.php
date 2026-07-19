@@ -57,7 +57,7 @@ final class ContentTranslationStore
     public function setValues(
         string $contentId,
         ContentTranslationType $type,
-        ContentTranslationLodgingProperty|ContentTranslationEquipmentProperty|ContentTranslationTagProperty $property,
+        ContentTranslationLodgingProperty|ContentTranslationEquipmentProperty|ContentTranslationTagProperty|ContentTranslationLocationProperty $property,
         array $values
     ) {
 

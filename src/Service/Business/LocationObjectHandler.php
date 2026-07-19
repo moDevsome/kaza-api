@@ -13,6 +13,9 @@ use Api\Object\Business\CreateLocationRequestObject;
 use Api\Object\Business\LocationAreaObject;
 use Api\Object\Business\LocationObject;
 use Api\Object\Business\PatchRequestObject;
+use Api\Enum\Business\ContentTranslationType;
+use Api\Enum\Business\ContentTranslationLocationProperty;
+use Api\Object\Business\ContentTranslationRequestValueObject;
 
 final class LocationObjectHandler implements ObjectHandlerInterface
 {
@@ -53,10 +56,11 @@ final class LocationObjectHandler implements ObjectHandlerInterface
     /**
      * Create one location then return the object
      * @param CreateLocationRequestObject $createRequest
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return LocationObject
      */
-    public function createOne(CreateLocationRequestObject $createRequest): LocationObject
+    public function createOne(CreateLocationRequestObject $createRequest, bool $applyTranslation): LocationObject
     {
 
         //TODO:check if the name already exist
@@ -76,6 +80,18 @@ final class LocationObjectHandler implements ObjectHandlerInterface
             if ($newEntity === null)
                 throw new BusinessException(500, 'Error occured while creating location');
 
+            if ($applyTranslation === true) {
+
+                $this->contentTranslationStore->setValues(
+                    $newEntity->getId(),
+                    ContentTranslationType::Location,
+                    ContentTranslationLocationProperty::Name,
+                    [
+                        new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $createRequest->name)
+                    ]
+                );
+            }
+
             return $this->convertToLocationObject($newEntity);
         } catch (Exception $e) {
             throw $e;
@@ -87,10 +103,11 @@ final class LocationObjectHandler implements ObjectHandlerInterface
      *
      * @param string $id
      * @param CreateLocationRequestObject $requestObject
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return LocationObject
      */
-    public function updateOne(string $id, CreateLocationRequestObject $requestObject): LocationObject
+    public function updateOne(string $id, CreateLocationRequestObject $requestObject, bool $applyTranslation): LocationObject
     {
 
         try {
@@ -103,18 +120,22 @@ final class LocationObjectHandler implements ObjectHandlerInterface
             if ($locationEntity === null)
                 throw new BusinessException(404, 'Location not found');
 
-            $translateProperty = null;
-
             $locationEntity->setName($requestObject->name);
             $locationEntity->setArea($locationAreaEntity);
             $this->entityManager->persist($locationEntity);
             $this->entityManager->flush();
 
-            /*
-            if ($translateProperty !== null and $requestObject->autoTranslate === true) {
-                //TODO:handle translation
+            if ($applyTranslation === true) {
+
+                $this->contentTranslationStore->setValues(
+                    $locationEntity->getId(),
+                    ContentTranslationType::Location,
+                    ContentTranslationLocationProperty::Name,
+                    [
+                        new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $requestObject->name)
+                    ]
+                );
             }
-            */
 
             return $this->convertToLocationObject($locationEntity);
         } catch (Exception $e) {
@@ -141,7 +162,7 @@ final class LocationObjectHandler implements ObjectHandlerInterface
         }
     }
 
-    public function patchOne(string $id, string $property, PatchRequestObject $requestObject): LocationObject
+    public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): LocationObject
     {
         return new LocationObject('', '', new LocationAreaObject('', ''));
     }

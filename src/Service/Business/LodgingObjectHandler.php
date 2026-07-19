@@ -124,10 +124,11 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
      * Create one lodging then return the object
      * @param CreateLodgingRequestObject $createRequest
      * @param Host $host
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return LodgingObject
      */
-    public function createOne(CreateLodgingRequestObject $createRequest, Host $host): LodgingObject
+    public function createOne(CreateLodgingRequestObject $createRequest, Host $host, bool $applyTranslation): LodgingObject
     {
 
         try {
@@ -212,6 +213,17 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             if ($newEntity === null)
                 throw new BusinessException(500, 'Error occured while creating lodging');
 
+            // Add translation for the current tag
+            if ($applyTranslation === true) {
+                $currentTag = $this->contentTranslationStore->getCurrentTag();
+                $this->contentTranslationStore->setValues($newEntity->getId(), ContentTranslationType::Lodging, ContentTranslationLodgingProperty::Title, [
+                    new ContentTranslationRequestValueObject($currentTag, $newEntity->getTitle())
+                ]);
+                $this->contentTranslationStore->setValues($newEntity->getId(), ContentTranslationType::Lodging, ContentTranslationLodgingProperty::Description, [
+                    new ContentTranslationRequestValueObject($currentTag, $newEntity->getDescription())
+                ]);
+            }
+
             return $this->convertToLodgingObject($newEntity);
         } catch (Exception $e) {
             throw $e;
@@ -224,10 +236,11 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
      * @param string $id
      * @param string $property
      * @param PatchRequestObject $requestObject
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return LodgingObject
      */
-    public function patchOne(string $id, string $property, PatchRequestObject $requestObject): LodgingObject
+    public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): LodgingObject
     {
 
         try {
@@ -329,7 +342,7 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             }
             $this->entityManager->flush();
 
-            if ($translateProperty !== null and $requestObject->autoTranslate === true) {
+            if ($translateProperty !== null and $applyTranslation === true) {
                 $this->contentTranslationStore->setValues($lodgingEntity->getId(), ContentTranslationType::Lodging, $translateProperty, [
                     new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $requestObject->value)
                 ]);

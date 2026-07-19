@@ -5,9 +5,12 @@ namespace Api\Service\Business;
 use Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\Tag;
+use Api\Enum\Business\ContentTranslationTagProperty;
+use Api\Enum\Business\ContentTranslationType;
 use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
 use Api\Interface\ObjectHandlerInterface;
+use Api\Object\Business\ContentTranslationRequestValueObject;
 use Api\Object\Business\CreateTagRequestObject;
 use Api\Object\Business\TagObject;
 use Api\Object\Business\PatchRequestObject;
@@ -47,7 +50,7 @@ final class TagObjectHandler implements ObjectHandlerInterface
      * @throws BusinessException
      * @return TagObject
      */
-    public function createOne(CreateTagRequestObject $createRequest): TagObject
+    public function createOne(CreateTagRequestObject $createRequest,  bool $applyTranslation): TagObject
     {
 
         //TODO:check if the name already exist
@@ -62,6 +65,18 @@ final class TagObjectHandler implements ObjectHandlerInterface
             if ($newEntity === null)
                 throw new BusinessException(500, 'Error occured while creating tag');
 
+            if ($applyTranslation === true) {
+
+                $this->contentTranslationStore->setValues(
+                    $newEntity->getId(),
+                    ContentTranslationType::Tag,
+                    ContentTranslationTagProperty::Name,
+                    [
+                        new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $createRequest->name)
+                    ]
+                );
+            }
+
             return $this->convertToTagObject($newEntity);
         } catch (Exception $e) {
             throw $e;
@@ -73,10 +88,11 @@ final class TagObjectHandler implements ObjectHandlerInterface
      *
      * @param string $id
      * @param CreateTagRequestObject $requestObject
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return TagObject
      */
-    public function updateOne(string $id, CreateTagRequestObject $requestObject): TagObject
+    public function updateOne(string $id, CreateTagRequestObject $requestObject, bool $applyTranslation): TagObject
     {
 
         try {
@@ -85,14 +101,20 @@ final class TagObjectHandler implements ObjectHandlerInterface
             if ($tagEntity === null)
                 throw new BusinessException(404, 'Tag not found');
 
-            $translateProperty = null;
-
             $tagEntity->setName($requestObject->name);
             $this->entityManager->persist($tagEntity);
             $this->entityManager->flush();
 
-            if ($translateProperty !== null and $requestObject->autoTranslate === true) {
-                //TODO:handle translation
+            if ($applyTranslation === true) {
+
+                $this->contentTranslationStore->setValues(
+                    $tagEntity->getId(),
+                    ContentTranslationType::Tag,
+                    ContentTranslationTagProperty::Name,
+                    [
+                        new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $requestObject->name)
+                    ]
+                );
             }
 
             return $this->convertToTagObject($tagEntity);
@@ -120,7 +142,7 @@ final class TagObjectHandler implements ObjectHandlerInterface
         }
     }
 
-    public function patchOne(string $id, string $property, PatchRequestObject $requestObject): TagObject
+    public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): TagObject
     {
         return new TagObject('', '');
     }

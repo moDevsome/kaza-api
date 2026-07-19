@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 final class LocationController extends AbstractController
 {
+    private array $queryParams;
 
     public function __construct(
         private readonly ResponseBuffer $responseBuffer,
@@ -24,7 +25,9 @@ final class LocationController extends AbstractController
         private readonly SerializerInterface $serializer,
         private readonly EntityManagerInterface $entityManager,
         protected readonly RequestStack $requestStack,
-    ) {}
+    ) {
+        $this->queryParams = $this->requestStack->getCurrentRequest()->query->all();
+    }
 
     /**
      * Return a list of location
@@ -70,7 +73,10 @@ final class LocationController extends AbstractController
             'json'
         );
 
-        $createdLocation = $this->handler->createOne($createLocationRequestObject);
+        $createdLocation = $this->handler->createOne(
+            $createLocationRequestObject,
+            isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true
+        );
 
         $this->responseBuffer->addHeader('Location', '/location/' . $createdLocation->id);
         $this->responseBuffer->setStatusCode(201);
@@ -102,7 +108,11 @@ final class LocationController extends AbstractController
         if ($count !== 0)
             throw new BusinessException(400, 'This location could not be updated by the current user because it is associated with lodging which not belong to the current user');
 
-        $updatedLocation = $this->handler->updateOne($id, $createLocationRequestObject);
+        $updatedLocation = $this->handler->updateOne(
+            $id,
+            $createLocationRequestObject,
+            isset($this->queryParams['applyTranslation']) ? $this->queryParams['applyTranslation'] === "true" : true
+        );
         return $this->responseBuffer->buildResponse($updatedLocation);
     }
 
