@@ -8,7 +8,7 @@ use Api\Object\Business\PatchRequestObject;
 interface ObjectHandlerInterface
 {
 
-    public function loadList(array $criterias = []): array;
+    public function loadList(array $criterias = [], int $limitCount, int $limitOffset): array;
 
     public function loadOne(string $id): mixed;
 

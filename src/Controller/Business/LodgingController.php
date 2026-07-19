@@ -20,7 +20,13 @@ use Api\Service\Technical\ResponseBuffer;
 
 final class LodgingController extends AbstractController
 {
-
+    public function __construct(
+        private readonly ResponseBuffer $responseBuffer,
+        private readonly LodgingObjectHandler $handler,
+        private readonly EntityManagerInterface $entityManager,
+        protected readonly RequestStack $requestStack,
+        private readonly SerializerInterface $serializer
+    ) {}
 
     /**
      * Check if the current user is the updated lodging owner
@@ -47,7 +53,12 @@ final class LodgingController extends AbstractController
     public function index(): JsonResponse
     {
 
-        return $this->responseBuffer->buildResponse($this->handler->loadList());
+        $queryParams = $this->requestStack->getCurrentRequest()->query->all();
+        $criterias = array_filter($queryParams, fn($queryParamKey) => in_array($queryParamKey, ['hostId', 'title']), 2);
+        $limitCount = $queryParams['limitCount'] ?? 40;
+        $limitOffset = $queryParams['limitOffset'] ?? 0;
+
+        return $this->responseBuffer->buildResponse($this->handler->loadList($criterias, $limitCount, $limitOffset));
     }
 
     /**
@@ -207,12 +218,4 @@ final class LodgingController extends AbstractController
 
         return $this->responseBuffer->buildResponse($patchedLodging);
     }
-
-    public function __construct(
-        private readonly ResponseBuffer $responseBuffer,
-        private readonly LodgingObjectHandler $handler,
-        private readonly EntityManagerInterface $entityManager,
-        protected readonly RequestStack $requestStack,
-        private readonly SerializerInterface $serializer
-    ) {}
 }

@@ -32,7 +32,7 @@ final class LocationObjectHandler implements ObjectHandlerInterface
         );
     }
 
-    public function loadList(array $criterias = []): array
+    public function loadList(array $criterias = [], int $limitCount = 40, int $limitOffset = 0): array
     {
         return array_map(
             fn($locationEntity) => $this->convertToLocationObject($locationEntity),

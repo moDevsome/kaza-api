@@ -102,11 +102,11 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             throw new BusinessException(403,  'Incorrect lodging host');
     }
 
-    public function loadList(array $criterias = []): array
+    public function loadList(array $criterias = [], int $limitCount = 40, int $limitOffset = 0): array
     {
         return array_map(
             fn($lodgingEntity) => $this->convertToLodgingObject($lodgingEntity),
-            $this->entityManager->getRepository(Lodging::class)->findBy($criterias)
+            $this->entityManager->getRepository(Lodging::class)->findBy($criterias, limit: $limitCount, offset: $limitOffset)
         );
     }
 

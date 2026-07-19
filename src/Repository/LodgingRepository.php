@@ -2,9 +2,12 @@
 
 namespace Api\Repository;
 
-use Api\Entity\Lodging;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Uid\Ulid;
+use Api\Entity\Lodging;
+use Api\Exception\BusinessException;
 
 /**
  * @extends ServiceEntityRepository<Lodging>
@@ -16,28 +19,39 @@ class LodgingRepository extends ServiceEntityRepository
         parent::__construct($registry, Lodging::class);
     }
 
-    //    /**
-    //     * @return Lodging[] Returns an array of Lodging objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('l')
-    //            ->andWhere('l.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('l.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findBy(array $criteria, array|null $orderBy = null, int|null $limit = null, int|null $offset = null): array
+    {
 
-    //    public function findOneBySomeField($value): ?Lodging
-    //    {
-    //        return $this->createQueryBuilder('l')
-    //            ->andWhere('l.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        $queryBuilder = $this->createQueryBuilder('l');
+
+        foreach ($criteria as $criteriaName => $criteriaVal) {
+            switch ($criteriaName) {
+                case 'hostId':
+                    if (Ulid::isValid($criteriaVal) === false)
+                        throw new BusinessException(400, 'The given hostId is not a valid indentifier');
+
+                    $ormCriterias['l.Host = :host'] = $criteriaVal;
+                    $queryBuilder->andWhere('l.Host = :host');
+                    $queryBuilder->setParameter('host', $criteriaVal, UuidType::NAME);
+                    break;
+
+                case 'title':
+                    $ormCriterias['l.title like :title'] = '%' . strtolower($criteriaVal) . '%';
+                    $queryBuilder->andWhere('l.title like :title');
+                    $queryBuilder->setParameter('title', '%' . strtolower($criteriaVal) . '%');
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        return $queryBuilder
+            ->orderBy('l.id', 'ASC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }
