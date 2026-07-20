@@ -158,7 +158,11 @@ final class LocationObjectHandler implements ObjectHandlerInterface
             $this->entityManager->remove($locationEntity);
             $this->entityManager->flush();
 
-            //TODO:delete translation
+            $this->contentTranslationStore->deleteValues(
+                $locationEntity->getId(),
+                ContentTranslationType::Location,
+                ContentTranslationLocationProperty::Name
+            );
         }
     }
 

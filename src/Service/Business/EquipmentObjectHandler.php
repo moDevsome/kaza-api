@@ -138,7 +138,11 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
             $this->entityManager->remove($equipmentEntity);
             $this->entityManager->flush();
 
-            //TODO:delete translation
+            $this->contentTranslationStore->deleteValues(
+                $equipmentEntity->getId(),
+                ContentTranslationType::Equipment,
+                ContentTranslationEquipmentProperty::Name
+            );
         }
     }
 

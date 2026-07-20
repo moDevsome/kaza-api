@@ -138,7 +138,11 @@ final class TagObjectHandler implements ObjectHandlerInterface
             $this->entityManager->remove($tagEntity);
             $this->entityManager->flush();
 
-            //TODO:delete translation
+            $this->contentTranslationStore->deleteValues(
+                $tagEntity->getId(),
+                ContentTranslationType::Tag,
+                ContentTranslationTagProperty::Name
+            );
         }
     }
 

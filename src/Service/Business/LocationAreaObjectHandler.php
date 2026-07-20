@@ -135,7 +135,11 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
             $this->entityManager->remove($locationAreaEntity);
             $this->entityManager->flush();
 
-            //TODO:delete translation
+            $this->contentTranslationStore->deleteValues(
+                $locationAreaEntity->getId(),
+                ContentTranslationType::LocationArea,
+                ContentTranslationLocationAreaProperty::Name
+            );
         }
     }
 

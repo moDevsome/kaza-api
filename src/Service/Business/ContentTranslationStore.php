@@ -4,6 +4,8 @@ namespace Api\Service\Business;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Uid\Ulid;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 use Api\Entity\ContentTranslation;
 use Api\Entity\Tag;
 use Api\Entity\Equipment;
@@ -18,7 +20,6 @@ use Api\Enum\Business\ContentTranslationTagProperty;
 use Api\Enum\Business\ContentTranslationType;
 use Api\Exception\BusinessException;
 use Api\Helper\StringHelper;
-use Symfony\Component\Uid\Ulid;
 
 /**
  * This class is made to load and store all the content translations
@@ -28,6 +29,25 @@ final class ContentTranslationStore
     private array $contentTranslations = [];
     private array $allowedLangTags = [];
     private string $currentTag = 'fr-FR'; //TODO:use the symfony translate system to get the current tag
+
+    private array $propertiesByType = [
+        ContentTranslationType::Lodging->value => [
+            ContentTranslationLodgingProperty::Title->value,
+            ContentTranslationLodgingProperty::Description->value
+        ],
+        ContentTranslationType::Tag->value => [
+            ContentTranslationTagProperty::Name->value
+        ],
+        ContentTranslationType::Equipment->value => [
+            ContentTranslationEquipmentProperty::Name->value
+        ],
+        ContentTranslationType::Location->value => [
+            ContentTranslationLocationProperty::Name->value
+        ],
+        ContentTranslationType::LocationArea->value => [
+            ContentTranslationLocationAreaProperty::Name->value
+        ]
+    ];
 
     private function loadCurrentTag(): void
     {
@@ -48,6 +68,17 @@ final class ContentTranslationStore
         $this->currentTag = $currentTag;
     }
 
+    public function __construct(private readonly EntityManagerInterface $entityManager, private RequestStack $requestStack,)
+    {
+
+        $this->allowedLangTags = (isset($_ENV['ALLOWED_LANG_TAGS']) and is_string($_ENV['ALLOWED_LANG_TAGS'])) ? StringHelper::explode(',', $_ENV['ALLOWED_LANG_TAGS']) : ['fr-FR'];
+
+        $this->loadCurrentTag();
+
+        // Load lodging content translations
+        $this->contentTranslations = $this->entityManager->getRepository(ContentTranslation::class)->findAll();
+    }
+
     public function getCurrentTag(): string
     {
         return $this->currentTag;
@@ -58,6 +89,13 @@ final class ContentTranslationStore
         return $this->allowedLangTags;
     }
 
+    /**
+     * Add translation values for the given content
+     * @param string $contentId
+     * @param ContentTranslationType $type
+     * @param ContentTranslationLodgingProperty|ContentTranslationEquipmentProperty|ContentTranslationTagProperty|ContentTranslationLocationProperty|ContentTranslationLocationAreaProperty $property
+     * @param array $values // Array of ContentTranslationRequestValueObject
+     */
     public function setValues(
         string $contentId,
         ContentTranslationType $type,
@@ -65,26 +103,7 @@ final class ContentTranslationStore
         array $values
     ) {
 
-        $propertiesByType = [
-            ContentTranslationType::Lodging->value => [
-                ContentTranslationLodgingProperty::Title->value,
-                ContentTranslationLodgingProperty::Description->value
-            ],
-            ContentTranslationType::Tag->value => [
-                ContentTranslationTagProperty::Name->value
-            ],
-            ContentTranslationType::Equipment->value => [
-                ContentTranslationEquipmentProperty::Name->value
-            ],
-            ContentTranslationType::Location->value => [
-                ContentTranslationLocationProperty::Name->value
-            ],
-            ContentTranslationType::LocationArea->value => [
-                ContentTranslationLocationAreaProperty::Name->value
-            ]
-        ];
-
-        if (!in_array($property->value, $propertiesByType[$type->value]))
+        if (!in_array($property->value, $this->propertiesByType[$type->value]))
             throw new BusinessException(400, 'The property must belong to a backed enumeration of type Api\\Enum\\Business\\ContentTranslation' . $type->value . 'Property"');
 
         // Load the target content
@@ -136,14 +155,35 @@ final class ContentTranslationStore
         return $translation !== null ? $translation->getTranslationValue() : $fallBack;
     }
 
-    public function __construct(private readonly EntityManagerInterface $entityManager, private RequestStack $requestStack,)
-    {
+    /**
+     * Delete translation values for the given content
+     * @param string $contentId
+     * @param ContentTranslationType $type
+     * @param ContentTranslationLodgingProperty|ContentTranslationEquipmentProperty|ContentTranslationTagProperty|ContentTranslationLocationProperty|ContentTranslationLocationAreaProperty $property
+     * @param string $tag // If "*", all the translations will be deleted
+     */
+    public function deleteValues(
+        string $contentId,
+        ContentTranslationType $type,
+        ContentTranslationLodgingProperty|ContentTranslationEquipmentProperty|ContentTranslationTagProperty|ContentTranslationLocationProperty|ContentTranslationLocationAreaProperty $property,
+        string $tag = '*'
+    ) {
 
-        $this->allowedLangTags = (isset($_ENV['ALLOWED_LANG_TAGS']) and is_string($_ENV['ALLOWED_LANG_TAGS'])) ? StringHelper::explode(',', $_ENV['ALLOWED_LANG_TAGS']) : ['fr-FR'];
+        if (!in_array($property->value, $this->propertiesByType[$type->value]))
+            throw new BusinessException(400, 'The property must belong to a backed enumeration of type Api\\Enum\\Business\\ContentTranslation' . $type->value . 'Property"');
 
-        $this->loadCurrentTag();
+        $translationKey = strtolower($type->value) . '.' . strtolower($property->value);
 
-        // Load lodging content translations
-        $this->contentTranslations = $this->entityManager->getRepository(ContentTranslation::class)->findAll();
+        $queryBuilder = $this->entityManager->getRepository(ContentTranslation::class)->createQueryBuilder('ct')
+            ->delete()
+            ->where('ct.contentId = :contentId and ct.translationKey = :key')
+            ->setParameter('contentId', $contentId,  UuidType::NAME)
+            ->setParameter('key', $translationKey);
+
+        if ($tag !== '*') {
+            $queryBuilder->where('ct.Tag = :tag')->setParameter('tag', $tag);
+        }
+
+        $queryBuilder->getQuery()->execute();
     }
 }
