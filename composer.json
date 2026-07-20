@@ -64,7 +64,7 @@
     "scripts": {
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
+            "create-location-areas": "symfony-cmd"
         },
         "post-install-cmd": [
             "@auto-scripts"

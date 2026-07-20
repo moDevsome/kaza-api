@@ -32,8 +32,12 @@ final class ContentTranslationStore
     private function loadCurrentTag(): void
     {
 
-        $xUserLangHeader = $this->requestStack->getCurrentRequest()->headers->all()['x-user-lang-tag'] ?? array(null);
-        $currentTag = count($xUserLangHeader) > 0 ? $xUserLangHeader[0] : null;
+        if (php_sapi_name() === 'cli') {
+            $currentTag = 'fr-FR';
+        } else {
+            $xUserLangHeader = $this->requestStack->getCurrentRequest()->headers->all()['x-user-lang-tag'] ?? array(null);
+            $currentTag = count($xUserLangHeader) > 0 ? $xUserLangHeader[0] : null;
+        }
 
         if ($currentTag === null)
             throw new BusinessException(400, 'No user lang tag provided, please check "x-user-lang-tag" header');
@@ -57,7 +61,7 @@ final class ContentTranslationStore
     public function setValues(
         string $contentId,
         ContentTranslationType $type,
-        ContentTranslationLodgingProperty|ContentTranslationEquipmentProperty|ContentTranslationTagProperty|ContentTranslationLocationProperty $property,
+        ContentTranslationLodgingProperty|ContentTranslationEquipmentProperty|ContentTranslationTagProperty|ContentTranslationLocationProperty|ContentTranslationLocationAreaProperty $property,
         array $values
     ) {
 

@@ -5,9 +5,12 @@ namespace Api\Service\Business;
 use Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\LocationArea;
+use Api\Enum\Business\ContentTranslationLocationAreaProperty;
+use Api\Enum\Business\ContentTranslationType;
 use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
 use Api\Interface\ObjectHandlerInterface;
+use Api\Object\Business\ContentTranslationRequestValueObject;
 use Api\Object\Business\CreateLocationAreaRequestObject;
 use Api\Object\Business\LocationAreaObject;
 use Api\Object\Business\PatchRequestObject;
@@ -21,7 +24,6 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
 
     public function convertToLocationAreaObject(LocationArea $input): LocationAreaObject
     {
-        // TODO:handle translation
         return new LocationAreaObject(
             $input->getId(),
             $this->contentTranslationStore->getValue('locationarea.name', $input->getId(), $input->getName()),
@@ -32,7 +34,7 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
     {
         return array_map(
             fn($locationAreaEntity) => $this->convertToLocationAreaObject($locationAreaEntity),
-            $this->entityManager->getRepository(LocationArea::class)->findBy($criterias)
+            $this->entityManager->getRepository(LocationArea::class)->findBy($criterias, ['name' => 'asc'])
         );
     }
 
@@ -49,13 +51,12 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
     /**
      * Create one location area then return the object
      * @param CreateLocationAreaRequestObject $createRequest
+     * @param bool $applyTranslation
      * @throws BusinessException
      * @return LocationAreaObject
      */
-    public function createOne(CreateLocationAreaRequestObject $createRequest): LocationAreaObject
+    public function createOne(CreateLocationAreaRequestObject $createRequest, bool $applyTranslation): LocationAreaObject
     {
-
-        //TODO:check if the name already exist
 
         try {
 
@@ -66,6 +67,18 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
 
             if ($newEntity === null)
                 throw new BusinessException(500, 'Error occured while creating location area');
+
+            if ($applyTranslation === true) {
+
+                $this->contentTranslationStore->setValues(
+                    $newEntity->getId(),
+                    ContentTranslationType::LocationArea,
+                    ContentTranslationLocationAreaProperty::Name,
+                    [
+                        new ContentTranslationRequestValueObject($this->contentTranslationStore->getCurrentTag(), $createRequest->name)
+                    ]
+                );
+            }
 
             return $this->convertToLocationAreaObject($newEntity);
         } catch (Exception $e) {

@@ -18,9 +18,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Ask;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\String\Slugger\AsciiSlugger;
@@ -57,7 +55,6 @@ class PopulateDbCommand extends Command
                 'host',
                 'user',
                 'location',
-                'location_area',
             ] as $table
         ) {
             $connection->executeQuery('delete from ' . $table);
@@ -178,7 +175,7 @@ class PopulateDbCommand extends Command
     private function createLocations(): void
     {
         $createdLocations = array(); // Array of <string>
-        $createdLocationAreas = array(); // Array of <LocationArea> entity
+        $createdLocationAreas = $this->entityManager->getRepository(LocationArea::class)->findAll();
         foreach ($this->data as $testLodging) {
 
             if (in_array($testLodging->location, $createdLocations))
