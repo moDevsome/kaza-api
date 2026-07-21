@@ -25,6 +25,12 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
         );
     }
 
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ContentTranslationStore $contentTranslationStore,
+        private readonly LookupService $lookupService
+    ) {}
+
     public function loadList(array $criterias = [], int $limitCount = 40, int $limitOffset = 0): array
     {
         return array_map(
@@ -53,9 +59,12 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
     public function createOne(CreateEquipmentRequestObject $createRequest, bool $applyTranslation): EquipmentObject
     {
 
-        //TODO:check if the name already exist
-
         try {
+
+            // Check if the name already exist
+            $alreadyExistCount = count($this->lookupService->find('EQUIPMENT', $createRequest->name));
+            if ($alreadyExistCount > 0)
+                throw new BusinessException(400, $alreadyExistCount . ' Equipment already exist with this name');
 
             $newEntity = new Equipment();
             $newEntity->setName($createRequest->name);
@@ -94,6 +103,11 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
      */
     public function updateOne(string $id, CreateEquipmentRequestObject $requestObject, bool $applyTranslation): EquipmentObject
     {
+
+        // Check if the name already exist
+        $alreadyExistCount = count($this->lookupService->find('EQUIPMENT', $requestObject->name));
+        if ($alreadyExistCount > 0)
+            throw new BusinessException(400, $alreadyExistCount . ' Equipment already exist with this name');
 
         try {
 
@@ -150,9 +164,4 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
     {
         return new EquipmentObject('', '');
     }
-
-    public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly ContentTranslationStore $contentTranslationStore,
-    ) {}
 }

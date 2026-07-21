@@ -2,28 +2,33 @@
 
 namespace Api\Repository;
 
-use Api\Entity\Tag;
+use Exception;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
-use Exception;
+use Symfony\Component\Uid\Ulid;
+use Api\Entity\Tag;
 
 /**
  * @extends ServiceEntityRepository<Tag>
  */
 class TagRepository extends ServiceEntityRepository
 {
+    public function __construct(ManagerRegistry $registry, private readonly Connection $dbConnection)
+    {
+        parent::__construct($registry, Tag::class);
+    }
 
     /**
      * @param array Array of tag id
-     * @return Tag[] Returns an array of Tag objects
+     * @return Tag[] Returns an array of Tag entity
      */
     public function findByIds(array $ids): array
     {
         return $this->createQueryBuilder('t')
             ->where('t.id in (:ids)')
-            ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
+            ->setParameter('ids', array_map(fn(Ulid $id) => $id->toBinary(), $ids), ArrayParameterType::BINARY)
             ->getQuery()
             ->getResult();
     }
@@ -64,10 +69,5 @@ class TagRepository extends ServiceEntityRepository
         } catch (Exception $e) {
             throw new Exception('countTagByUserId error: ' . $e->getMessage(), $e->getCode());
         }
-    }
-
-    public function __construct(ManagerRegistry $registry, private readonly Connection $dbConnection)
-    {
-        parent::__construct($registry, Tag::class);
     }
 }

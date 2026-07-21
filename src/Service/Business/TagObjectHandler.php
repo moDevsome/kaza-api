@@ -26,6 +26,12 @@ final class TagObjectHandler implements ObjectHandlerInterface
         );
     }
 
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ContentTranslationStore $contentTranslationStore,
+        private readonly LookupService $lookupService
+    ) {}
+
     public function loadList(array $criterias = [], int $limitCount = 40, int $limitOffset = 0): array
     {
         return array_map(
@@ -53,9 +59,11 @@ final class TagObjectHandler implements ObjectHandlerInterface
     public function createOne(CreateTagRequestObject $createRequest,  bool $applyTranslation): TagObject
     {
 
-        //TODO:check if the name already exist
-
         try {
+
+            $alreadyExistCount = count($this->lookupService->find('TAG', $createRequest->name));
+            if ($alreadyExistCount > 0)
+                throw new BusinessException(400, $alreadyExistCount . ' Tag already exist with this name');
 
             $newEntity = new Tag();
             $newEntity->setName($createRequest->name);
@@ -94,6 +102,10 @@ final class TagObjectHandler implements ObjectHandlerInterface
      */
     public function updateOne(string $id, CreateTagRequestObject $requestObject, bool $applyTranslation): TagObject
     {
+
+        $alreadyExistCount = count($this->lookupService->find('TAG', $requestObject->name));
+        if ($alreadyExistCount > 0)
+            throw new BusinessException(400, $alreadyExistCount . ' Tag already exist with this name');
 
         try {
 
@@ -150,9 +162,4 @@ final class TagObjectHandler implements ObjectHandlerInterface
     {
         return new TagObject('', '');
     }
-
-    public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly ContentTranslationStore $contentTranslationStore,
-    ) {}
 }

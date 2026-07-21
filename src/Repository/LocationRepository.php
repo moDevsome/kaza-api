@@ -2,17 +2,37 @@
 
 namespace Api\Repository;
 
-use Api\Entity\Location;
+use Exception;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Connection;
-use Exception;
+use Doctrine\DBAL\ArrayParameterType;
+use Symfony\Component\Uid\Ulid;
+use Api\Entity\Location;
 
 /**
  * @extends ServiceEntityRepository<Location>
  */
 class LocationRepository extends ServiceEntityRepository
 {
+
+    public function __construct(ManagerRegistry $registry,  private readonly Connection $dbConnection)
+    {
+        parent::__construct($registry, Location::class);
+    }
+
+    /**
+     * @param array Array of location id
+     * @return Location[] Returns an array of Location entity
+     */
+    public function findByIds(array $ids): array
+    {
+        return $this->createQueryBuilder('l')
+            ->where('l.id in (:ids)')
+            ->setParameter('ids', array_map(fn(Ulid $id) => $id->toBinary(), $ids), ArrayParameterType::BINARY)
+            ->getQuery()
+            ->getResult();
+    }
 
     /**
      * Count the number of user which have lodging associated with the given location id
@@ -50,10 +70,5 @@ class LocationRepository extends ServiceEntityRepository
         } catch (Exception $e) {
             throw new Exception('countLocationByUserId error: ' . $e->getMessage(), $e->getCode());
         }
-    }
-
-    public function __construct(ManagerRegistry $registry,  private readonly Connection $dbConnection)
-    {
-        parent::__construct($registry, Location::class);
     }
 }

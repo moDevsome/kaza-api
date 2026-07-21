@@ -23,6 +23,7 @@ final class LocationObjectHandler implements ObjectHandlerInterface
         private readonly LocationAreaObjectHandler $locatioAreaObjectHandler,
         private readonly EntityManagerInterface $entityManager,
         private readonly ContentTranslationStore $contentTranslationStore,
+        private readonly LookupService $lookupService
     ) {}
 
     private function convertToLocationObject(Location $input): LocationObject
@@ -63,13 +64,15 @@ final class LocationObjectHandler implements ObjectHandlerInterface
     public function createOne(CreateLocationRequestObject $createRequest, bool $applyTranslation): LocationObject
     {
 
-        //TODO:check if the name already exist
-
-        $locationAreaEntity = $this->entityManager->getRepository(LocationArea::class)->findOneById($createRequest->locationAreaId);
-        if ($locationAreaEntity === null)
-            throw new BusinessException(400, 'Location area not found (' . $createRequest->locationAreaId . ')');
-
         try {
+
+            $locationAreaEntity = $this->entityManager->getRepository(LocationArea::class)->findOneById($createRequest->locationAreaId);
+            if ($locationAreaEntity === null)
+                throw new BusinessException(400, 'Location area not found (' . $createRequest->locationAreaId . ')');
+
+            $alreadyExistCount = count($this->lookupService->find('LOCATION', $createRequest->name));
+            if ($alreadyExistCount > 0)
+                throw new BusinessException(400, $alreadyExistCount . ' Location already exist with this name');
 
             $newEntity = new Location();
             $newEntity->setName($createRequest->name);
@@ -111,6 +114,10 @@ final class LocationObjectHandler implements ObjectHandlerInterface
     {
 
         try {
+
+            $alreadyExistCount = count($this->lookupService->find('LOCATION', $requestObject->name));
+            if ($alreadyExistCount > 0)
+                throw new BusinessException(400, $alreadyExistCount . ' Location already exist with this name');
 
             $locationAreaEntity = $this->entityManager->getRepository(LocationArea::class)->findOneById($requestObject->locationAreaId);
             if ($locationAreaEntity === null)

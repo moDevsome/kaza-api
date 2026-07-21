@@ -2,12 +2,13 @@
 
 namespace Api\Repository;
 
-use Api\Entity\Equipment;
+use Exception;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
-use Exception;
+use Symfony\Component\Uid\Ulid;
+use Api\Entity\Equipment;
 
 /**
  * @extends ServiceEntityRepository<Equipment>
@@ -23,7 +24,7 @@ class EquipmentRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('e')
             ->where('e.id in (:ids)')
-            ->setParameter('ids', $ids, ArrayParameterType::INTEGER)
+            ->setParameter('ids', array_map(fn(Ulid $id) => $id->toBinary(), $ids), ArrayParameterType::BINARY)
             ->getQuery()
             ->getResult();
     }

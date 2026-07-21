@@ -16,28 +16,28 @@ class ContentTranslationRepository extends ServiceEntityRepository
         parent::__construct($registry, ContentTranslation::class);
     }
 
-//    /**
-//     * @return ContentTranslation[] Returns an array of ContentTranslation objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('c.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * @param string $translationValue
+     * @param string $tag
+     * @param ?string $translationKey
+     * @return ContentTranslation[] Returns an array of ContentTranslation entity
+     */
+    public function findByTranslationValue(string $translationValue, string $tag, ?string $translationKey = null): array
+    {
 
-//    public function findOneBySomeField($value): ?ContentTranslation
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        $queryBuilder = $this->createQueryBuilder('ct');
+        if ($translationKey !== null) {
+            $queryBuilder->where('ct.translationValue = :value and ct.tag = :tag and ct.translationKey = :key')
+                ->setParameter('value', $translationValue)
+                ->setParameter('tag', $tag)
+                ->setParameter(':key', $translationKey);
+        } else {
+            $queryBuilder->where('ct.translationValue = :value and ct.tag = :tag')
+                ->setParameter('value', $translationValue)
+                ->setParameter('tag', $tag);
+        }
+
+        return $queryBuilder->getQuery()
+            ->getResult();
+    }
 }
