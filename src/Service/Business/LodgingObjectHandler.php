@@ -70,6 +70,12 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
         );
     }
 
+    public function __construct(
+        private readonly ContentTranslationStore $contentTranslationStore,
+        private readonly LookupService $lookupService,
+        private readonly EntityManagerInterface $entityManager,
+    ) {}
+
     /**
      * Check if the user id belong to the host of the lodging
      * Throw an exception if the user id is not the lodging owner
@@ -104,9 +110,10 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
 
     public function loadList(array $criterias = [], int $limitCount = 40, int $limitOffset = 0): array
     {
+        $query = $criterias['q'] ?? '';
         return array_map(
             fn($lodgingEntity) => $this->convertToLodgingObject($lodgingEntity),
-            $this->entityManager->getRepository(Lodging::class)->findBy($criterias, limit: $limitCount, offset: $limitOffset)
+            $this->lookupService->find('LODGING', $query, $criterias)
         );
     }
 
@@ -299,7 +306,7 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
 
                 case 'tags':
                     if (!is_array($requestObject->value))
-                        throw new BusinessException(400, 'The given value must be an array of Tag id (int)');
+                        throw new BusinessException(400, 'The given value must be an array of Tag id (string)');
 
                     // Remove all current tag entities
                     foreach ($lodgingEntity->getTags() as $tagEntity) {
@@ -319,7 +326,7 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
 
                 case 'equipments':
                     if (!is_array($requestObject->value))
-                        throw new BusinessException(400, 'The given value must be an array of Equipment id (int)');
+                        throw new BusinessException(400, 'The given value must be an array of Equipment id (string)');
 
                     // Remove all current equipment entities
                     foreach ($lodgingEntity->getEquipments() as $equipmentEntity) {
@@ -388,8 +395,8 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                 break;
 
             case 'tag':
-                if (!is_int($requestObject->value))
-                    throw new BusinessException(400, 'The given value must be a Tag id (int)');
+                if (!is_string($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Tag id (string)');
 
                 $tagEntity = $this->entityManager->getRepository(Tag::class)->findOneBy(['id' => $requestObject->value]);
                 if ($tagEntity === null)
@@ -399,8 +406,8 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                 break;
 
             case 'equipment':
-                if (!is_int($requestObject->value))
-                    throw new BusinessException(400, 'The given value must be a Equipment id (int)');
+                if (!is_string($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Equipment id (string)');
 
                 $equipmentEntity = $this->entityManager->getRepository(Equipment::class)->findOneBy(['id' => $requestObject->value]);
                 if ($equipmentEntity === null)
@@ -447,8 +454,8 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                 break;
 
             case 'tag':
-                if (!is_int($requestObject->value))
-                    throw new BusinessException(400, 'The given value must be a Tag id (int)');
+                if (!is_string($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Tag id (string)');
 
                 $tagEntity = $this->entityManager->getRepository(Tag::class)->findOneBy(['id' => $requestObject->value]);
                 if ($tagEntity !== null)
@@ -456,8 +463,8 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
                 break;
 
             case 'equipment':
-                if (!is_int($requestObject->value))
-                    throw new BusinessException(400, 'The given value must be a Equipment id (int)');
+                if (!is_string($requestObject->value))
+                    throw new BusinessException(400, 'The given value must be a Equipment id (string)');
 
                 $equipmentEntity = $this->entityManager->getRepository(Equipment::class)->findOneBy(['id' => $requestObject->value]);
                 if ($equipmentEntity !== null)
@@ -471,9 +478,4 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
 
         return $this->convertToLodgingObject($lodgingEntity);
     }
-
-    public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly ContentTranslationStore $contentTranslationStore,
-    ) {}
 }

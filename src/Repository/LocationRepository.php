@@ -7,6 +7,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\ORM\Query\ResultSetMapping;
 use Symfony\Component\Uid\Ulid;
 use Api\Entity\Location;
 
@@ -32,6 +33,45 @@ class LocationRepository extends ServiceEntityRepository
             ->setParameter('ids', array_map(fn(Ulid $id) => $id->toBinary(), $ids), ArrayParameterType::BINARY)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Find Location entities by making a lookup on the name
+     * Return the full DB entity
+     * @param string $queryString
+     * @param ?string $operator
+     * @return Location[] Returns an array of location entity
+     *
+     * @phpstan-param '='|'!='|'LIKE'|'REGEXP' $operator
+     */
+    public function findByName(string $queryString, ?string $operator = '='): array
+    {
+
+        // Find all entities which have a match
+        // We have to use the "createNativeQuery" method because REGEXP is not supported by Doctrine DQL
+        $rsm = new ResultSetMapping();
+        $rsm->addEntityResult('Api\Entity\Location', 'l');
+        $rsm->addFieldResult('l', 'location_id', 'id');
+        $rsm->addFieldResult('l', 'location_name', 'name');
+        $sqlQuery = 'select l.id location_id, l.name location_name from location l
+                    where l.name ' . $operator . ' :value';
+        $query = $this->getEntityManager()->createNativeQuery($sqlQuery, $rsm);
+
+        $query->setParameter(':value', match ($operator) {
+            'REGEXP' => strtolower(preg_replace('#\s+#', '|', $queryString)),
+            'LIKE' => '%' . $queryString . '%',
+            default => $queryString,
+        });
+        $lookUpResults = $query->getResult();
+        if (count($lookUpResults) > 0) {
+
+            // We have to clear the current cached object then to execute a new query to avoid null area
+            // Use JOIN in the query above does not work
+            $this->getEntityManager()->clear();
+            return $this->findByIds(array_map(fn($lookUpResult) => $lookUpResult->getId(), $lookUpResults));
+        } else {
+            return $lookUpResults;
+        }
     }
 
     /**

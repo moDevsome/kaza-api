@@ -7,6 +7,7 @@ use Api\Entity\ContentTranslation;
 use Api\Entity\Tag;
 use Api\Entity\Equipment;
 use Api\Entity\Location;
+use Api\Entity\Lodging;
 
 /**
  * This service is made to find any content regarding the given terme
@@ -24,13 +25,59 @@ final class LookupService
      * @phpstan-param 'LODGING'|'LOCATION'|'EQUIPMENT'|'TAG' $contentType
      * @param string $query
      * @param array $extraCriteria
+     * @return array Array of entities
      */
     public function find(string $contentType, string $query, array $extraCriteria = array()): array
     {
 
         if ($contentType === 'LODGING') {
-            //TODO:handle loging lookup
-            return array();
+
+            $lodgingRepository = $this->entityManager->getRepository(Lodging::class);
+
+            if (strlen($query) === 0) {
+                return $lodgingRepository->findBy($extraCriteria);
+            }
+
+            // Find tags, equipments and locations by name
+            $tagIds = array_map(fn($tag) => $tag->getId(), $this->entityManager->getRepository(Tag::class)->findByName($query, 'REGEXP'));
+            $equipmentIds = array_map(fn($equipment) => $equipment->getId(), $this->entityManager->getRepository(Equipment::class)->findByName($query, 'REGEXP'));
+            $locationIds = array_map(fn($location) => $location->getId(),  $this->entityManager->getRepository(Location::class)->findByName($query, 'REGEXP'));
+
+            // Find tags, equipments and locations by translation
+            $lodgingIdsByTranslations = array();
+            $tagIdsByTranslations = array();
+            $equipmentIdsByTranslations = array();
+            $locationIdsByTranslations = array();
+            foreach (
+                $this->entityManager->getRepository(ContentTranslation::class)->findByTranslationValue(
+                    $query,
+                    $this->contentTranslationStore->getCurrentTag(),
+                    null,
+                    'REGEXP'
+                ) as $translationEntity
+            ) {
+                match ($translationEntity->getTranslationKey()) {
+                    'lodging.title' => $lodgingIdsByTranslations[] = $translationEntity->getContentId(),
+                    'lodging.description' => $lodgingIdsByTranslations[] = $translationEntity->getContentId(),
+                    'tag.name' => $tagIdsByTranslations[] = $translationEntity->getContentId(),
+                    'equipment.name' => $equipmentIdsByTranslations[] = $translationEntity->getContentId(),
+                    'location.name' => $locationIdsByTranslations[] = $translationEntity->getContentId()
+                };
+            }
+
+            // Find lodging ids
+            $lodgingIdsByContent = $lodgingRepository->findIdsByContent($query, 'REGEXP');
+            $lodgingIdsByTagIds = $lodgingRepository->findIdsByTagIds(array_unique(array_merge($tagIds, $tagIdsByTranslations)));
+            $lodgingIdsByEquipmentIds = $lodgingRepository->findIdsByEquipmentIds(array_unique(array_merge($equipmentIds, $equipmentIdsByTranslations)));
+            $lodgingIdsByLocationIds = array_map(
+                fn($lodging) => $lodging->getId(),
+                $lodgingRepository->findByLocationIds(array_unique(array_merge($locationIds, $locationIdsByTranslations)))
+            );
+
+            $lodgingIds = array_unique(array_merge($lodgingIdsByContent, $lodgingIdsByTagIds, $lodgingIdsByEquipmentIds, $lodgingIdsByLocationIds));
+
+            // Find lodgings
+            return $lodgingRepository->findByIds($lodgingIds);
         } else {
 
             $repository = $this->entityManager->getRepository([

@@ -17,6 +17,7 @@ use Api\Object\Business\CreateLodgingRequestObject;
 use Api\Object\Business\PatchRequestObject;
 use Api\Object\Business\RemoveElementRequestObject;
 use Api\Service\Technical\ResponseBuffer;
+use Exception;
 
 final class LodgingController extends AbstractController
 {
@@ -57,11 +58,15 @@ final class LodgingController extends AbstractController
     public function index(): JsonResponse
     {
 
-        $criterias = array_filter($this->queryParams, fn($queryParamKey) => in_array($queryParamKey, ['hostId', 'title']), 2);
+        $criterias = array_filter($this->queryParams, fn($queryParamKey) => in_array($queryParamKey, ['hostId', 'q']), 2);
         $limitCount = $this->queryParams['limitCount'] ?? 40;
         $limitOffset = $this->queryParams['limitOffset'] ?? 0;
 
-        return $this->responseBuffer->buildResponse($this->handler->loadList($criterias, $limitCount, $limitOffset));
+        try {
+            return $this->responseBuffer->buildResponse($this->handler->loadList($criterias, $limitCount, $limitOffset));
+        } catch (Exception $e) {
+            throw new BusinessException($e->getCode(),  'Error while getting lodging list');
+        }
     }
 
     /**

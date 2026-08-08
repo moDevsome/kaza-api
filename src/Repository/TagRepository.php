@@ -7,6 +7,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\ORM\Query\ResultSetMapping;
 use Symfony\Component\Uid\Ulid;
 use Api\Entity\Tag;
 
@@ -31,6 +32,36 @@ class TagRepository extends ServiceEntityRepository
             ->setParameter('ids', array_map(fn(Ulid $id) => $id->toBinary(), $ids), ArrayParameterType::BINARY)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Find Tag entities by making a lookup on the name
+     * Return the full DB entity
+     * @param string $queryString
+     * @param ?string $operator
+     * @return Tag[] Returns an array of tag entity
+     *
+     * @phpstan-param '='|'!='|'LIKE'|'REGEXP' $operator
+     */
+    public function findByName(string $queryString, ?string $operator = '='): array
+    {
+
+        // Find all entities which have a match
+        // We have to use the "createNativeQuery" method because REGEXP is not supported by Doctrine DQL
+        $rsm = new ResultSetMapping();
+        $rsm->addEntityResult('Api\Entity\Tag', 'l');
+        $rsm->addFieldResult('l', 'id', 'id');
+        $rsm->addFieldResult('l', 'name', 'name');
+
+        $sqlQuery = 'select l.id, l.name from tag l where l.name ' . $operator . ' :value';
+        $query = $this->getEntityManager()->createNativeQuery($sqlQuery, $rsm);
+        $query->setParameter(':value', match ($operator) {
+            'REGEXP' => strtolower(preg_replace('#\s+#', '|', $queryString)),
+            'LIKE' => '%' . $queryString . '%',
+            default => $queryString,
+        });
+
+        return $query->getResult();
     }
 
     /**
