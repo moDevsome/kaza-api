@@ -32,7 +32,7 @@ final class TagObjectHandler implements ObjectHandlerInterface
         private readonly LookupService $lookupService
     ) {}
 
-    public function loadList(array $criterias = [], int $limitCount = 40, int $limitOffset = 0): array
+    public function loadList(array $criterias = array(), array $orderBy = array(), int $limitCount = 40, int $limitOffset = 0): array
     {
         return array_map(
             fn($tagEntity) => $this->convertToTagObject($tagEntity),

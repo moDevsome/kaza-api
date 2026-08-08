@@ -108,12 +108,22 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             throw new BusinessException(403,  'Incorrect lodging host');
     }
 
-    public function loadList(array $criterias = [], int $limitCount = 40, int $limitOffset = 0): array
+    /**
+     * Load lodging object list according the given criteria
+     *
+     * @param array $criterias
+     * @param array $orderBy
+     * @param int $limitCount
+     * @param int $limitOffset
+     * @return array
+     */
+    public function loadList(array $criterias = array(),  array $orderBy = array(), int $limitCount = 40, int $limitOffset = 0): array
     {
         $query = $criterias['q'] ?? '';
+        unset($criterias['q']);
         return array_map(
             fn($lodgingEntity) => $this->convertToLodgingObject($lodgingEntity),
-            $this->lookupService->find('LODGING', $query, $criterias)
+            $this->lookupService->find('LODGING', $query, $criterias, $orderBy, $limitCount, $limitOffset)
         );
     }
 

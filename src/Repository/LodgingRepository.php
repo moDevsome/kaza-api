@@ -93,13 +93,47 @@ class LodgingRepository extends ServiceEntityRepository
 
     /**
      * @param Ulid[] Array of lodging id
+     * @param array<string, mixed> $criteria
+     * @param array<string, string>|null $orderBy
+     * @param int|null $limit
+     * @param int|null $offset
      * @return Lodging[] Returns an array of Lodging entity
      */
-    public function findByIds(array $ids): array
-    {
-        return $this->createQueryBuilder('l')
-            ->where('l.id in (:ids)')
-            ->setParameter('ids', array_map(fn(Ulid $id) => $id->toBinary(), $ids), ArrayParameterType::BINARY)
+    public function findByIds(
+        array $ids,
+        array $criteria = array(),
+        ?array $orderBy = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): array {
+        $queryBuilder = $this->createQueryBuilder('l');
+
+        $queryBuilder->where('l.id in (:ids)')
+            ->setParameter('ids', array_map(fn(Ulid $id) => $id->toBinary(), $ids), ArrayParameterType::BINARY);
+
+        foreach ($criteria as $criteriaName => $criteriaVal) {
+            switch ($criteriaName) {
+                case 'hostId':
+                    $queryBuilder->andWhere('l.Host = :host');
+                    $queryBuilder->setParameter('host', $criteriaVal, UuidType::NAME);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        if ($orderBy !== null and count($orderBy) === 2) {
+            $queryBuilder
+                ->orderBy('l.' . $orderBy[0], strtoupper($orderBy[1]));
+        } else {
+            $queryBuilder
+                ->orderBy('l.id', 'ASC');
+        }
+
+        return $queryBuilder
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }

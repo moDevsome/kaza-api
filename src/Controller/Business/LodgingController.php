@@ -7,10 +7,13 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
+use Symfony\Component\Uid\Ulid;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\Host;
 use Api\Entity\Lodging;
 use Api\Exception\BusinessException;
+use Api\Helper\QueryParamHelper;
 use Api\Object\Business\AddElementRequestObject;
 use Api\Service\Business\LodgingObjectHandler;
 use Api\Object\Business\CreateLodgingRequestObject;
@@ -26,6 +29,7 @@ final class LodgingController extends AbstractController
     public function __construct(
         private readonly ResponseBuffer $responseBuffer,
         private readonly LodgingObjectHandler $handler,
+        private readonly QueryParamHelper $queryParamHelper,
         private readonly EntityManagerInterface $entityManager,
         protected readonly RequestStack $requestStack,
         private readonly SerializerInterface $serializer
@@ -55,15 +59,26 @@ final class LodgingController extends AbstractController
      * Return a list of lodging
      */
     #[Route('/lodging', name: 'api_lodging_list', methods: ['GET'])]
-    public function index(): JsonResponse
+    public function index(#[MapQueryParameter] string $q, #[MapQueryParameter] ?string $hostId, #[MapQueryParameter] ?string $sort, #[MapQueryParameter] ?int $p): JsonResponse
     {
 
-        $criterias = array_filter($this->queryParams, fn($queryParamKey) => in_array($queryParamKey, ['hostId', 'q']), 2);
+        $criterias = array();
+        if ($q) $criterias['q'] = $q;
+
+        if ($hostId) {
+            if (Ulid::isValid($hostId) === false)
+                throw new BusinessException(400, 'The given hostId is not a valid identifier');
+            else {
+                $criterias['hostId'] = $hostId;
+            }
+        }
+
+        $orderBy = $sort !== null ? $this->queryParamHelper->parseSort($sort, ['id', 'title']) : array();
+
         $limitCount = $this->queryParams['limitCount'] ?? 40;
         $limitOffset = $this->queryParams['limitOffset'] ?? 0;
-
         try {
-            return $this->responseBuffer->buildResponse($this->handler->loadList($criterias, $limitCount, $limitOffset));
+            return $this->responseBuffer->buildResponse($this->handler->loadList($criterias, $orderBy, $limitCount, $limitOffset));
         } catch (Exception $e) {
             throw new BusinessException($e->getCode(),  'Error while getting lodging list');
         }

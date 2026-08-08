@@ -24,18 +24,20 @@ final class LookupService
      * Content Look up
      * @phpstan-param 'LODGING'|'LOCATION'|'EQUIPMENT'|'TAG' $contentType
      * @param string $query
-     * @param array $extraCriteria
+     * @param ?array $criteria
+     * @param ?array $orderBy
+     * @param ?int $limitCount
+     * @param ?int $limitOffset
      * @return array Array of entities
      */
-    public function find(string $contentType, string $query, array $extraCriteria = array()): array
+    public function find(string $contentType, string $query, array $criteria = array(), ?array $orderBy = null, ?int $limitCount = 10000, ?int $limitOffset = 0): array
     {
 
         if ($contentType === 'LODGING') {
 
             $lodgingRepository = $this->entityManager->getRepository(Lodging::class);
-
             if (strlen($query) === 0) {
-                return $lodgingRepository->findBy($extraCriteria);
+                return $lodgingRepository->findBy($criteria, $orderBy, $limitCount, $limitOffset);
             }
 
             // Find tags, equipments and locations by name
@@ -77,7 +79,7 @@ final class LookupService
             $lodgingIds = array_unique(array_merge($lodgingIdsByContent, $lodgingIdsByTagIds, $lodgingIdsByEquipmentIds, $lodgingIdsByLocationIds));
 
             // Find lodgings
-            return $lodgingRepository->findByIds($lodgingIds);
+            return $lodgingRepository->findByIds($lodgingIds, $criteria, $orderBy, $limitCount, $limitOffset);
         } else {
 
             $repository = $this->entityManager->getRepository([

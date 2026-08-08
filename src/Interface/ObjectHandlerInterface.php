@@ -11,11 +11,12 @@ interface ObjectHandlerInterface
     /**
      * Load an object list according to the given criterias
      * @param array $criterias
+     * @param array $orderBy
      * @param int $limitCount
      * @param int $limitOffset
      * @return array
      */
-    public function loadList(array $criterias, int $limitCount, int $limitOffset): array;
+    public function loadList(array $criterias, array $orderBy, int $limitCount, int $limitOffset): array;
 
     /**
      * Load one object according to the given id
