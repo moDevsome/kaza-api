@@ -59,8 +59,13 @@ final class LodgingController extends AbstractController
      * Return a list of lodging
      */
     #[Route('/lodging', name: 'api_lodging_list', methods: ['GET'])]
-    public function index(#[MapQueryParameter] string $q, #[MapQueryParameter] ?string $hostId, #[MapQueryParameter] ?string $sort, #[MapQueryParameter] ?int $p): JsonResponse
-    {
+    public function index(
+        #[MapQueryParameter] ?string $q,
+        #[MapQueryParameter] ?string $hostId,
+        #[MapQueryParameter] ?string $sort,
+        #[MapQueryParameter] ?int $limitCount,
+        #[MapQueryParameter] ?int $limitOffset
+    ): JsonResponse {
 
         $criterias = array();
         if ($q) $criterias['q'] = $q;
@@ -75,8 +80,8 @@ final class LodgingController extends AbstractController
 
         $orderBy = $sort !== null ? $this->queryParamHelper->parseSort($sort, ['id', 'title', 'rating']) : array();
 
-        $limitCount = $this->queryParams['limitCount'] ?? 40;
-        $limitOffset = $this->queryParams['limitOffset'] ?? 0;
+        $limitCount = $limitCount ?? 40;
+        $limitOffset = $limitOffset ?? 0;
         try {
             return $this->responseBuffer->buildResponse($this->handler->loadList($criterias, $orderBy, $limitCount, $limitOffset));
         } catch (Exception $e) {
