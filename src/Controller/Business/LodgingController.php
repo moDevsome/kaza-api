@@ -73,7 +73,7 @@ final class LodgingController extends AbstractController
             }
         }
 
-        $orderBy = $sort !== null ? $this->queryParamHelper->parseSort($sort, ['id', 'title']) : array();
+        $orderBy = $sort !== null ? $this->queryParamHelper->parseSort($sort, ['id', 'title', 'rating']) : array();
 
         $limitCount = $this->queryParams['limitCount'] ?? 40;
         $limitOffset = $this->queryParams['limitOffset'] ?? 0;
