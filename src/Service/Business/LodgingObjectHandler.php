@@ -121,10 +121,26 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
     {
         $query = $criterias['q'] ?? '';
         unset($criterias['q']);
-        return array_map(
+        $objects = array_map(
             fn($lodgingEntity) => $this->convertToLodgingObject($lodgingEntity),
             $this->lookupService->find('LODGING', $query, $criterias, $orderBy, $limitCount, $limitOffset)
         );
+
+        if (count($orderBy) === 2 and $orderBy[0] === 'title') {
+            // Re-order the object by title to handle translated title
+            $lodgingObjectTitles = array_map(fn($object) => $object->title, $objects);
+            $output = array();
+            sort($lodgingObjectTitles);
+            foreach ($lodgingObjectTitles as $lodgingObjectTitle) {
+                $lodgingObject = array_find($objects, fn($object) => $object->title === $lodgingObjectTitle);
+                if ($lodgingObject) {
+                    $output[] = $lodgingObject;
+                }
+            }
+            return $output;
+        } else {
+            return $objects;
+        }
     }
 
     public function loadOne(string $id): LodgingObject|null
