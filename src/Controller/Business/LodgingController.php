@@ -63,19 +63,33 @@ final class LodgingController extends AbstractController
         #[MapQueryParameter] ?string $q,
         #[MapQueryParameter] ?string $hostId,
         #[MapQueryParameter] ?string $sort,
+        #[MapQueryParameter] ?int $minRating,
+        #[MapQueryParameter] ?int $maxRating,
         #[MapQueryParameter] ?int $limitCount,
         #[MapQueryParameter] ?int $limitOffset
     ): JsonResponse {
 
         $criterias = array();
+
+        // Handle look up query string
         if ($q) $criterias['q'] = $q;
 
+        // Handle hostId
         if ($hostId) {
             if (Ulid::isValid($hostId) === false)
                 throw new BusinessException(400, 'The given hostId is not a valid identifier');
             else {
                 $criterias['hostId'] = $hostId;
             }
+        }
+
+        // Handle rating
+        if ($minRating !== null and $maxRating === null) {
+            $criterias['rating'] = 'rating >= ' . $minRating;
+        } else if ($minRating === null and $maxRating !== null) {
+            $criterias['rating'] = 'rating <= ' . $maxRating;
+        } else if ($minRating !== null and $maxRating !== null) {
+            $criterias['rating'] = 'rating >= ' . $minRating . ' and rating <= ' . $maxRating;
         }
 
         $orderBy = $sort !== null ? $this->queryParamHelper->parseSort($sort, ['id', 'title', 'rating']) : array();

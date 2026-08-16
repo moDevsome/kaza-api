@@ -7,6 +7,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\Query\ResultSetMapping;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Ulid;
 use Api\Entity\Lodging;
@@ -116,6 +117,20 @@ class LodgingRepository extends ServiceEntityRepository
                 case 'hostId':
                     $queryBuilder->andWhere('l.Host = :host');
                     $queryBuilder->setParameter('host', $criteriaVal, UuidType::NAME);
+                    break;
+
+                case 'rating':
+                    $values = array();
+                    preg_match_all('#[0-9]#', $criteriaVal, $values);
+                    $criteriaVal = str_ireplace('rating', 'l.rating', $criteriaVal);
+                    // Replace each given value by a token
+                    $i = 0;
+                    foreach (array_unique($values[0]) as $value) {
+                        $criteriaVal = str_ireplace($value, ':rating_' . $i, $criteriaVal);
+                        $queryBuilder->setParameter('rating_' . $i, $value, ParameterType::INTEGER);
+                        $i++;
+                    }
+                    $queryBuilder->andWhere('(' . $criteriaVal . ')');
                     break;
 
                 default:
