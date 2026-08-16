@@ -62,6 +62,7 @@ final class LodgingController extends AbstractController
     public function index(
         #[MapQueryParameter] ?string $q,
         #[MapQueryParameter] ?string $hostId,
+        #[MapQueryParameter] ?string $title,
         #[MapQueryParameter] ?string $sort,
         #[MapQueryParameter] ?int $minRating,
         #[MapQueryParameter] ?int $maxRating,
@@ -80,6 +81,15 @@ final class LodgingController extends AbstractController
                 throw new BusinessException(400, 'The given hostId is not a valid identifier');
             else {
                 $criterias['hostId'] = $hostId;
+            }
+        }
+
+        // Handle title
+        if ($title) {
+            if ($q)
+                $this->responseBuffer->addWarning('"title" query param is ignored when "q" query param is provided');
+            else {
+                $criterias['title'] = $title;
             }
         }
 

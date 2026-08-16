@@ -8,10 +8,10 @@ use Doctrine\ORM\Query\ResultSetMapping;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\ORM\QueryBuilder;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Ulid;
 use Api\Entity\Lodging;
-use Api\Exception\BusinessException;
 
 /**
  * @extends ServiceEntityRepository<Lodging>
@@ -115,22 +115,11 @@ class LodgingRepository extends ServiceEntityRepository
         foreach ($criteria as $criteriaName => $criteriaVal) {
             switch ($criteriaName) {
                 case 'hostId':
-                    $queryBuilder->andWhere('l.Host = :host');
-                    $queryBuilder->setParameter('host', $criteriaVal, UuidType::NAME);
+                    $queryBuilder = $this->addHostCriteria($queryBuilder, $criteriaVal);
                     break;
 
                 case 'rating':
-                    $values = array();
-                    preg_match_all('#[0-9]#', $criteriaVal, $values);
-                    $criteriaVal = str_ireplace('rating', 'l.rating', $criteriaVal);
-                    // Replace each given value by a token
-                    $i = 0;
-                    foreach (array_unique($values[0]) as $value) {
-                        $criteriaVal = str_ireplace($value, ':rating_' . $i, $criteriaVal);
-                        $queryBuilder->setParameter('rating_' . $i, $value, ParameterType::INTEGER);
-                        $i++;
-                    }
-                    $queryBuilder->andWhere('(' . $criteriaVal . ')');
+                    $queryBuilder = $this->addRatingCriteria($queryBuilder, $criteriaVal);
                     break;
 
                 default:
@@ -161,18 +150,17 @@ class LodgingRepository extends ServiceEntityRepository
         foreach ($criteria as $criteriaName => $criteriaVal) {
             switch ($criteriaName) {
                 case 'hostId':
-                    if (Ulid::isValid($criteriaVal) === false)
-                        throw new BusinessException(400, 'The given hostId is not a valid indentifier');
-
-                    $ormCriterias['l.Host = :host'] = $criteriaVal;
-                    $queryBuilder->andWhere('l.Host = :host');
-                    $queryBuilder->setParameter('host', $criteriaVal, UuidType::NAME);
+                    $this->addHostCriteria($queryBuilder, $criteriaVal);
                     break;
 
                 case 'title':
                     $ormCriterias['l.title like :title'] = '%' . strtolower($criteriaVal) . '%';
                     $queryBuilder->andWhere('l.title like :title');
                     $queryBuilder->setParameter('title', '%' . strtolower($criteriaVal) . '%');
+                    break;
+
+                case 'rating':
+                    $queryBuilder = $this->addRatingCriteria($queryBuilder, $criteriaVal);
                     break;
 
                 default:
@@ -210,5 +198,43 @@ class LodgingRepository extends ServiceEntityRepository
                 'ids' => implode(',', array_map(fn($id) => $id->toBinary(), $ids)),
             ]
         ));
+    }
+
+    /**
+     * Add "rating where" values to the given query builder
+     * @param QueryBuilder $queryBuilder
+     * @param string $criteriaVal
+     * @return QueryBuilder
+     */
+    private function addRatingCriteria(QueryBuilder $queryBuilder, string $criteriaVal): QueryBuilder
+    {
+        $values = array();
+        preg_match_all('#[0-9]#', $criteriaVal, $values);
+        $criteriaVal = str_ireplace('rating', 'l.rating', $criteriaVal);
+        // Replace each given value by a token
+        $i = 0;
+        foreach (array_unique($values[0]) as $value) {
+            $criteriaVal = str_ireplace($value, ':rating_' . $i, $criteriaVal);
+            $queryBuilder->setParameter('rating_' . $i, $value, ParameterType::INTEGER);
+            $i++;
+        }
+        $queryBuilder->andWhere('(' . $criteriaVal . ')');
+
+        return $queryBuilder;
+    }
+
+    /**
+     * Add "Host where" values to the given query builder
+     * @param QueryBuilder $queryBuilder
+     * @param string $criteriaVal
+     * @return QueryBuilder
+     */
+    private function addHostCriteria(QueryBuilder $queryBuilder, string $criteriaVal): QueryBuilder
+    {
+        $ormCriterias['l.Host = :host'] = $criteriaVal;
+        $queryBuilder->andWhere('l.Host = :host');
+        $queryBuilder->setParameter('host', $criteriaVal, UuidType::NAME);
+
+        return $queryBuilder;
     }
 }

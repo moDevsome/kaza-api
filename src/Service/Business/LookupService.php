@@ -34,12 +34,14 @@ final class LookupService
     {
 
         if ($contentType === 'LODGING') {
-
             $lodgingRepository = $this->entityManager->getRepository(Lodging::class);
             if (strlen($query) === 0) {
                 return $lodgingRepository->findBy($criteria, $orderBy, $limitCount, $limitOffset);
             }
 
+            /**
+             * ------ Wide loop-up in any contents related to lodgings ------
+             */
             // Find tags, equipments and locations by name
             $tagIds = array_map(fn($tag) => $tag->getId(), $this->entityManager->getRepository(Tag::class)->findByName($query, 'REGEXP'));
             $equipmentIds = array_map(fn($equipment) => $equipment->getId(), $this->entityManager->getRepository(Equipment::class)->findByName($query, 'REGEXP'));
