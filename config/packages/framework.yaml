@@ -1,7 +1,7 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
-    error_controller: Api\Controller\Technical\ErrorController::show
+    error_controller: Api\Controller\Technical\ErrorController::show # Comment it in debug context
 
     # Note that the session will be started ONLY if you read or write from it.
     session: true
