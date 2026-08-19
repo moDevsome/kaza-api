@@ -142,6 +142,13 @@ class LodgingRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @param array<string, mixed> $criteria
+     * @param array<string, string>|null $orderBy
+     * @param int|null $limit
+     * @param int|null $offset
+     * @return Lodging[] Returns an array of Lodging entity
+     */
     public function findBy(array $criteria, array|null $orderBy = null, int|null $limit = null, int|null $offset = null): array
     {
 

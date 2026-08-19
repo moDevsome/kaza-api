@@ -13,6 +13,10 @@ use Exception;
  */
 class LocationAreaRepository extends ServiceEntityRepository
 {
+    public function __construct(ManagerRegistry $registry, private readonly Connection $dbConnection)
+    {
+        parent::__construct($registry, LocationArea::class);
+    }
 
     /**
      * Count the number of user which have lodging associated with the given location area id
@@ -52,10 +56,5 @@ class LocationAreaRepository extends ServiceEntityRepository
         } catch (Exception $e) {
             throw new Exception('countLocationAreaByUserId error: ' . $e->getMessage(), $e->getCode());
         }
-    }
-
-    public function __construct(ManagerRegistry $registry, private readonly Connection $dbConnection)
-    {
-        parent::__construct($registry, LocationArea::class);
     }
 }

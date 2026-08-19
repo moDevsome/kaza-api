@@ -16,6 +16,10 @@ use Api\Entity\Equipment;
  */
 class EquipmentRepository extends ServiceEntityRepository
 {
+    public function __construct(ManagerRegistry $registry, private readonly Connection $dbConnection)
+    {
+        parent::__construct($registry, Equipment::class);
+    }
 
     /**
      * @param array Array of equipment id
@@ -96,10 +100,5 @@ class EquipmentRepository extends ServiceEntityRepository
         } catch (Exception $e) {
             throw new Exception('countEquipmentByUserId error: ' . $e->getMessage(), $e->getCode());
         }
-    }
-
-    public function __construct(ManagerRegistry $registry, private readonly Connection $dbConnection)
-    {
-        parent::__construct($registry, Equipment::class);
     }
 }

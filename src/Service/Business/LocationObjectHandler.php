@@ -3,6 +3,7 @@
 namespace Api\Service\Business;
 
 use Exception;
+use BadFunctionCallException;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\Location;
 use Api\Entity\LocationArea;
@@ -10,7 +11,6 @@ use Api\Exception\BusinessException;
 use Api\Service\Business\ContentTranslationStore;
 use Api\Interface\ObjectHandlerInterface;
 use Api\Object\Business\CreateLocationRequestObject;
-use Api\Object\Business\LocationAreaObject;
 use Api\Object\Business\LocationObject;
 use Api\Object\Business\PatchRequestObject;
 use Api\Enum\Business\ContentTranslationType;
@@ -26,9 +26,13 @@ final class LocationObjectHandler implements ObjectHandlerInterface
         private readonly LookupService $lookupService
     ) {}
 
+    /**
+     * Mapping function wich convert the DTO found in the database to the expected web output object format
+     * @param Location $input
+     * @return LocationObject
+     */
     private function convertToLocationObject(Location $input): LocationObject
     {
-        // TODO:handle translation
         return new LocationObject(
             $input->getId(),
             $this->contentTranslationStore->getValue('location.name', $input->getId(), $input->getName()),
@@ -175,6 +179,6 @@ final class LocationObjectHandler implements ObjectHandlerInterface
 
     public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): LocationObject
     {
-        return new LocationObject('', '', new LocationAreaObject('', ''));
+        throw new BadFunctionCallException('Patch Location not implemented');
     }
 }

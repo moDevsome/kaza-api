@@ -3,6 +3,7 @@
 namespace Api\Service\Business;
 
 use Exception;
+use BadFunctionCallException;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\Tag;
 use Api\Enum\Business\ContentTranslationTagProperty;
@@ -17,6 +18,12 @@ use Api\Object\Business\PatchRequestObject;
 
 final class TagObjectHandler implements ObjectHandlerInterface
 {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ContentTranslationStore $contentTranslationStore,
+        private readonly LookupService $lookupService
+    ) {}
+
     private function convertToTagObject(Tag $input): TagObject
     {
         // TODO:handle translation
@@ -25,12 +32,6 @@ final class TagObjectHandler implements ObjectHandlerInterface
             $this->contentTranslationStore->getValue('tag.name', $input->getId(), $input->getName()),
         );
     }
-
-    public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly ContentTranslationStore $contentTranslationStore,
-        private readonly LookupService $lookupService
-    ) {}
 
     public function loadList(array $criterias = array(), array $orderBy = array(), int $limitCount = 40, int $limitOffset = 0): array
     {
@@ -158,8 +159,18 @@ final class TagObjectHandler implements ObjectHandlerInterface
         }
     }
 
+    /**
+     * Patch a tag object
+     *
+     * @param string $id
+     * @param string $property
+     * @param PatchRequestObject $requestObject
+     * @param bool $applyTranslation
+     * @throws \BadFunctionCallException
+     * @return TagObject
+     */
     public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): TagObject
     {
-        return new TagObject('', '');
+        throw new BadFunctionCallException('Patch Tag not implemented');
     }
 }

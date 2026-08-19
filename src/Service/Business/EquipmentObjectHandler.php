@@ -3,6 +3,7 @@
 namespace Api\Service\Business;
 
 use Exception;
+use BadFunctionCallException;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\Equipment;
 use Api\Enum\Business\ContentTranslationEquipmentProperty;
@@ -17,6 +18,17 @@ use Api\Object\Business\PatchRequestObject;
 
 final class EquipmentObjectHandler implements ObjectHandlerInterface
 {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ContentTranslationStore $contentTranslationStore,
+        private readonly LookupService $lookupService
+    ) {}
+
+    /**
+     * Mapping function wich convert the DTO found in the database to the expected web output object format
+     * @param Equipment $input
+     * @return EquipmentObject
+     */
     private function convertToEquipmentObject(Equipment $input): EquipmentObject
     {
         return new EquipmentObject(
@@ -25,12 +37,15 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
         );
     }
 
-    public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly ContentTranslationStore $contentTranslationStore,
-        private readonly LookupService $lookupService
-    ) {}
-
+    /**
+     * Load equipment object list according the given criteria
+     *
+     * @param array $criterias
+     * @param array $orderBy
+     * @param int $limitCount
+     * @param int $limitOffset
+     * @return array
+     */
     public function loadList(array $criterias = array(), array $orderBy = array(), int $limitCount = 40, int $limitOffset = 0): array
     {
         return array_map(
@@ -39,6 +54,12 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
         );
     }
 
+    /**
+     * Load one equipment object
+     *
+     * @param string $id
+     * @return EquipmentObject|null
+     */
     public function loadOne(string $id): EquipmentObject|null
     {
 
@@ -160,8 +181,18 @@ final class EquipmentObjectHandler implements ObjectHandlerInterface
         }
     }
 
+    /**
+     * Patch a equipment object
+     *
+     * @param string $id
+     * @param string $property
+     * @param PatchRequestObject $requestObject
+     * @param bool $applyTranslation
+     * @throws \BadFunctionCallException
+     * @return EquipmentObject
+     */
     public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): EquipmentObject
     {
-        return new EquipmentObject('', '');
+        throw new BadFunctionCallException('Patch Equipment not implemented');
     }
 }

@@ -35,6 +35,17 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
         'image/webp'
     ];
 
+    public function __construct(
+        private readonly ContentTranslationStore $contentTranslationStore,
+        private readonly LookupService $lookupService,
+        private readonly EntityManagerInterface $entityManager,
+    ) {}
+
+    /**
+     * Return a file mime type
+     * @param string $picturePath
+     * @return string|null The mime type or null
+     */
     private function getPictureFileMimeType(string $picturePath): ?string
     {
         try {
@@ -47,6 +58,11 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
         }
     }
 
+    /**
+     * Mapping function wich convert the DTO found in the database to the expected web output object format
+     * @param Lodging $input
+     * @return LodgingObject
+     */
     private function convertToLodgingObject(Lodging $input): LodgingObject
     {
 
@@ -69,12 +85,6 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
             array_values(array_map(fn($tagEntity) => $this->contentTranslationStore->getValue('tag.name', $tagEntity->getId(), $tagEntity->getName()), $input->getTags()->toArray()))
         );
     }
-
-    public function __construct(
-        private readonly ContentTranslationStore $contentTranslationStore,
-        private readonly LookupService $lookupService,
-        private readonly EntityManagerInterface $entityManager,
-    ) {}
 
     /**
      * Check if the user id belong to the host of the lodging
@@ -143,6 +153,12 @@ final class LodgingObjectHandler implements ObjectHandlerInterface
         }
     }
 
+    /**
+     * Load one lodging object
+     *
+     * @param string $id
+     * @return LodgingObject|null
+     */
     public function loadOne(string $id): LodgingObject|null
     {
 

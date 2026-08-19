@@ -49,10 +49,25 @@ final class ContentTranslationStore
         ]
     ];
 
+    public function __construct(private readonly EntityManagerInterface $entityManager, private RequestStack $requestStack,)
+    {
+
+        $this->allowedLangTags = (isset($_ENV['ALLOWED_LANG_TAGS']) and is_string($_ENV['ALLOWED_LANG_TAGS'])) ? StringHelper::explode(',', $_ENV['ALLOWED_LANG_TAGS']) : ['fr-FR'];
+
+        $this->loadCurrentTag();
+
+        // Load lodging content translations
+        $this->contentTranslations = $this->entityManager->getRepository(ContentTranslation::class)->findAll();
+    }
+
+    /**
+     * Define the current lang tag from the "x-user-lang-tag" header value
+     * @return void
+     */
     private function loadCurrentTag(): void
     {
 
-        if (php_sapi_name() === 'cli') {
+        if (php_sapi_name() === 'cli') { // Handle missing "x-user-lang-tag" header in console mode
             $currentTag = 'fr-FR';
         } else {
             $xUserLangHeader = $this->requestStack->getCurrentRequest()->headers->all()['x-user-lang-tag'] ?? array(null);
@@ -68,22 +83,19 @@ final class ContentTranslationStore
         $this->currentTag = $currentTag;
     }
 
-    public function __construct(private readonly EntityManagerInterface $entityManager, private RequestStack $requestStack,)
-    {
-
-        $this->allowedLangTags = (isset($_ENV['ALLOWED_LANG_TAGS']) and is_string($_ENV['ALLOWED_LANG_TAGS'])) ? StringHelper::explode(',', $_ENV['ALLOWED_LANG_TAGS']) : ['fr-FR'];
-
-        $this->loadCurrentTag();
-
-        // Load lodging content translations
-        $this->contentTranslations = $this->entityManager->getRepository(ContentTranslation::class)->findAll();
-    }
-
+    /**
+     * Return the current lang tag
+     * @return string
+     */
     public function getCurrentTag(): string
     {
         return $this->currentTag;
     }
 
+    /**
+     * Return the lang tags allowed in the configuration
+     * @return array - Array of string
+     */
     public function getAllowedLangTags(): array
     {
         return $this->allowedLangTags;
@@ -145,6 +157,13 @@ final class ContentTranslationStore
         $this->entityManager->flush();
     }
 
+    /**
+     * Get a translation value
+     * @param string $key
+     * @param Ulid $contentId
+     * @param string $fallBack
+     * @return string
+     */
     public function getValue(string $key, Ulid $contentId, string $fallBack = ''): string
     {
         $translation = array_find(

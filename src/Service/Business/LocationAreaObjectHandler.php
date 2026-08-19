@@ -3,6 +3,7 @@
 namespace Api\Service\Business;
 
 use Exception;
+use BadFunctionCallException;
 use Doctrine\ORM\EntityManagerInterface;
 use Api\Entity\LocationArea;
 use Api\Enum\Business\ContentTranslationLocationAreaProperty;
@@ -22,6 +23,11 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
         private readonly ContentTranslationStore $contentTranslationStore,
     ) {}
 
+    /**
+     * Mapping function wich convert the DTO found in the database to the expected web output object format
+     * @param LocationArea $input
+     * @return LocationAreaObject
+     */
     public function convertToLocationAreaObject(LocationArea $input): LocationAreaObject
     {
         return new LocationAreaObject(
@@ -145,6 +151,6 @@ final class LocationAreaObjectHandler implements ObjectHandlerInterface
 
     public function patchOne(string $id, string $property, PatchRequestObject $requestObject, bool $applyTranslation): LocationAreaObject
     {
-        return new LocationAreaObject('', '');
+        throw new BadFunctionCallException('Patch LocationArea not implemented');
     }
 }
