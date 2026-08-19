@@ -5,6 +5,7 @@ namespace Api\Controller\Technical;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Attribute\Route;
 use Api\Object\Technical\ResponseBufferObject;
 
 #[AsController]
@@ -24,5 +25,14 @@ class ErrorController
         $errorText = $exception->getClass() === 'Api\Exception\BusinessException' ? $exception->getMessage() : $exception->getStatusText();
 
         return new JsonResponse(new ResponseBufferObject(null, [implode(' - ', [$exception->getStatusCode(), $errorText])], []));
+    }
+
+    /**
+     * Avoid returning Symfony default page
+     */
+    #[Route('/', name: 'api_root')]
+    public function rootError()
+    {
+        return new JsonResponse(new ResponseBufferObject(null, [implode(' - ', [404, 'Not Found'])], []));
     }
 }
