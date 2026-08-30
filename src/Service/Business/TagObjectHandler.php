@@ -16,7 +16,7 @@ use Api\Object\Business\CreateTagRequestObject;
 use Api\Object\Business\TagObject;
 use Api\Object\Business\PatchRequestObject;
 
-final class TagObjectHandler implements ObjectHandlerInterface
+class TagObjectHandler implements ObjectHandlerInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

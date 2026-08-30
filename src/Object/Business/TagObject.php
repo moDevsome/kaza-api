@@ -2,4 +2,4 @@
 
 namespace Api\Object\Business;
 
-final class TagObject extends ElementObject {}
+class TagObject extends ElementObject {}
