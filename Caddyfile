@@ -1,0 +1,6 @@
+kaza-api.localhost {
+    root * /var/www/public
+    php_fastcgi php:9000
+    file_server
+    tls internal
+}
