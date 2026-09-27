@@ -16,7 +16,7 @@ use Api\Object\Business\CreateEquipmentRequestObject;
 use Api\Object\Business\EquipmentObject;
 use Api\Object\Business\PatchRequestObject;
 
-final class EquipmentObjectHandler implements ObjectHandlerInterface
+class EquipmentObjectHandler implements ObjectHandlerInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

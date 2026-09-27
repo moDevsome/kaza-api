@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cc1db8ec17fb8716a83331319cbee263",
+    "content-hash": "46bb3c1df0acb1365d3a35d0f4ce97ac",
     "packages": [
         {
             "name": "doctrine/collections",
@@ -5782,6 +5782,51 @@
                 "source": "https://github.com/Masterminds/html5-php/tree/2.11.0"
             },
             "time": "2026-08-18T06:18:41+00:00"
+        },
+        {
+            "name": "modevsome/palmo",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/moDevsome/Palmo.git",
+                "reference": "763ae1b4b725b912874fbc89505d0a77a268e691"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/moDevsome/Palmo/zipball/763ae1b4b725b912874fbc89505d0a77a268e691",
+                "reference": "763ae1b4b725b912874fbc89505d0a77a268e691",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.0.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "moDevsome\\Palmo\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "moDevsome - Mickaël Outhier",
+                    "email": "contact@mickael-outhier.fr"
+                }
+            ],
+            "description": "Simple mock generator for PHP application",
+            "keywords": [
+                "generator",
+                "mock",
+                "stub"
+            ],
+            "support": {
+                "issues": "https://github.com/moDevsome/Palmo/issues",
+                "source": "https://github.com/moDevsome/Palmo/tree/1.0.0"
+            },
+            "time": "2026-09-26T15:24:34+00:00"
         },
         {
             "name": "myclabs/deep-copy",

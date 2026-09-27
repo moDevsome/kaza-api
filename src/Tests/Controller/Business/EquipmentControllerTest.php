@@ -10,20 +10,20 @@ use Symfony\Component\DependencyInjection\Attribute\When;
 use Symfony\Bundle\SecurityBundle\Security;
 use moDevsome\Palmo\Palmo;
 use Api\Entity\User;
-use Api\Service\Business\TagObjectHandler;
-use Api\MockGenerator\Object\Business\TagObjectMock;
-use Api\Object\Business\TagObject;
-use Api\Repository\TagRepository;
+use Api\Service\Business\EquipmentObjectHandler;
+use Api\MockGenerator\Object\Business\EquipmentObjectMock;
+use Api\Object\Business\EquipmentObject;
+use Api\Repository\EquipmentRepository;
 
 #[When(env: 'test')]
-class TagControllerTest extends WebTestCase
+class EquipmentControllerTest extends WebTestCase
 {
     private $setUpBeforeAllStatus = false;
-    private $tagObjectsMock = array(); // Array of TagObject
+    private $equipmentObjectsMock = array(); // Array of EquipmentObject
 
     private KernelBrowser $client;
-    private MockObject&TagObjectHandler $tagObjectHandlerMock;
-    private TagObjectMock $mockGenerator;
+    private MockObject&EquipmentObjectHandler $equipmentObjectHandlerMock;
+    private EquipmentObjectMock $mockGenerator;
 
     private function setUpBeforeAll(): void
     {
@@ -35,9 +35,9 @@ class TagControllerTest extends WebTestCase
         /**
          * Defines mocks values
          */
-        $this->mockGenerator = $this->getContainer()->get(TagObjectMock::class);
-        $this->tagObjectsMock = $this->mockGenerator->generateList();
-        $this->tagObjectHandlerMock = $this->createMock(TagObjectHandler::class);
+        $this->mockGenerator = $this->getContainer()->get(EquipmentObjectMock::class);
+        $this->equipmentObjectsMock = $this->mockGenerator->generateList();
+        $this->equipmentObjectHandlerMock = $this->createMock(EquipmentObjectHandler::class);
 
         // Mock security service to get the logged user with "getUser"();
         $palmo = new Palmo();
@@ -51,7 +51,7 @@ class TagControllerTest extends WebTestCase
         // Handle auth
         $client->loginUser($userStub);
 
-        $client->getContainer()->set(TagObjectHandler::class, $this->tagObjectHandlerMock);
+        $client->getContainer()->set(EquipmentObjectHandler::class, $this->equipmentObjectHandlerMock);
 
         $this->client = $client;
     }
@@ -67,12 +67,12 @@ class TagControllerTest extends WebTestCase
 
     public function testIndex(): void
     {
-        $this->tagObjectHandlerMock->expects(self::once())
+        $this->equipmentObjectHandlerMock->expects(self::once())
             ->method('loadList')
-            ->willReturn($this->tagObjectsMock);
+            ->willReturn($this->equipmentObjectsMock);
 
         // Request the endpoint
-        $this->client->request('GET', '/tag');
+        $this->client->request('GET', '/equipment');
 
         // Validate a successful response and some content
         $responseContent = json_decode($this->client->getResponse()->getContent());
@@ -81,23 +81,23 @@ class TagControllerTest extends WebTestCase
         $this->assertResponseFormatSame('json');
         $this->assertResponseIsSuccessful();
         $this->assertNotNull($content);
-        $this->assertSame(array_map('get_object_vars', $this->tagObjectsMock), array_map('get_object_vars', $content));
+        $this->assertSame(array_map('get_object_vars', $this->equipmentObjectsMock), array_map('get_object_vars', $content));
     }
 
-    public function testTag(): void
+    public function testEquipment(): void
     {
 
-        // Pick random tag from the mock
-        $tag = $this->tagObjectsMock[array_rand($this->tagObjectsMock)];
+        // Pick random equipment from the mock
+        $equipment = $this->equipmentObjectsMock[array_rand($this->equipmentObjectsMock)];
 
         // Handle service response
-        $this->tagObjectHandlerMock->expects(self::once())
+        $this->equipmentObjectHandlerMock->expects(self::once())
             ->method('loadOne')
-            ->with($tag->id)
-            ->willReturn($tag);
+            ->with($equipment->id)
+            ->willReturn($equipment);
 
         // Request the endpoint
-        $this->client->request('GET', '/tag/' . $tag->id);
+        $this->client->request('GET', '/equipment/' . $equipment->id);
 
         // Validate a successful response and some content
         $responseContent = json_decode($this->client->getResponse()->getContent());
@@ -106,18 +106,18 @@ class TagControllerTest extends WebTestCase
         $this->assertResponseFormatSame('json');
         $this->assertResponseIsSuccessful();
         $this->assertNotNull($content);
-        $this->assertSame(get_object_vars($tag), get_object_vars($content));
+        $this->assertSame(get_object_vars($equipment), get_object_vars($content));
     }
 
     public function testCreate(): void
     {
-        $this->tagObjectHandlerMock->expects(self::once())
+        $this->equipmentObjectHandlerMock->expects(self::once())
             ->method('createOne')
-            ->willReturn($this->tagObjectsMock[0]);
+            ->willReturn($this->equipmentObjectsMock[0]);
 
         // Request the endpoint
-        $this->client->request('POST', '/auth/tag', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
-            'name' => $this->tagObjectsMock[0]->name
+        $this->client->request('POST', '/auth/equipment', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
+            'name' => $this->equipmentObjectsMock[0]->name
         ]));
 
         // Validate a successful response and some content
@@ -127,32 +127,32 @@ class TagControllerTest extends WebTestCase
         $this->assertResponseFormatSame('json');
         $this->assertResponseIsSuccessful();
         $this->assertNotNull($content);
-        $this->assertSame(get_object_vars($this->tagObjectsMock[0]), get_object_vars($content));
+        $this->assertSame(get_object_vars($this->equipmentObjectsMock[0]), get_object_vars($content));
     }
 
     public function testUpdate(): void
     {
-        $tag = $this->tagObjectsMock[0];
-        $updatedObject = new TagObject($tag->id, $this->mockGenerator->generateName());
+        $equipment = $this->equipmentObjectsMock[0];
+        $updatedObject = new EquipmentObject($equipment->id, $this->mockGenerator->generateName());
 
-        $tagRepositoryMock = $this->createMock(TagRepository::class);
-        $tagRepositoryMock->expects(self::once())
-            ->method('countTagByUserId')
+        $equipmentRepositoryMock = $this->createMock(EquipmentRepository::class);
+        $equipmentRepositoryMock->expects(self::once())
+            ->method('countEquipmentByUserId')
             ->willReturn(0);
 
         $entityManagerMock = $this->createMock(EntityManagerInterface::class);
         $entityManagerMock->expects(self::once())
             ->method('getRepository')
-            ->willReturn($tagRepositoryMock);
+            ->willReturn($equipmentRepositoryMock);
 
         $this->client->getContainer()->set(EntityManagerInterface::class, $entityManagerMock);
 
-        $this->tagObjectHandlerMock->expects(self::once())
+        $this->equipmentObjectHandlerMock->expects(self::once())
             ->method('updateOne')
             ->willReturn($updatedObject);
 
         // Request the endpoint
-        $this->client->request('PUT', '/auth/tag/' . $tag->id, server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
+        $this->client->request('PUT', '/auth/equipment/' . $equipment->id, server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
             'name' => $updatedObject->name
         ]));
 
@@ -168,25 +168,25 @@ class TagControllerTest extends WebTestCase
 
     public function testDelete(): void
     {
-        $tag = $this->tagObjectsMock[0];
+        $equipment = $this->equipmentObjectsMock[0];
 
-        $tagRepositoryMock = $this->createMock(TagRepository::class);
-        $tagRepositoryMock->expects(self::once())
-            ->method('countTagByUserId')
+        $equipmentRepositoryMock = $this->createMock(EquipmentRepository::class);
+        $equipmentRepositoryMock->expects(self::once())
+            ->method('countEquipmentByUserId')
             ->willReturn(0);
 
         $entityManagerMock = $this->createMock(EntityManagerInterface::class);
         $entityManagerMock->expects(self::once())
             ->method('getRepository')
-            ->willReturn($tagRepositoryMock);
+            ->willReturn($equipmentRepositoryMock);
 
         $this->client->getContainer()->set(EntityManagerInterface::class, $entityManagerMock);
 
-        $this->tagObjectHandlerMock->expects(self::once())
+        $this->equipmentObjectHandlerMock->expects(self::once())
             ->method('deleteOne');
 
         // Request the endpoint
-        $this->client->request('DELETE', '/auth/tag/' . $tag->id);
+        $this->client->request('DELETE', '/auth/equipment/' . $equipment->id);
 
         // Validate a successful response and some content
         $responseContent = json_decode($this->client->getResponse()->getContent());

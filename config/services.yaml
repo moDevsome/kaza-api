@@ -24,6 +24,8 @@ services:
 
 when@test:
     services:
+        Api\MockGenerator\Object\Business\EquipmentObjectMock:
+            public: true
         Api\MockGenerator\Object\Business\TagObjectMock:
             public: true
         Api\MockGenerator\Entity\UserMock:
