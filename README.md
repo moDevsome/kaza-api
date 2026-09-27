@@ -6,7 +6,7 @@ API permettant une utilisation FULLSTACK du projet numéro 7 de la formation Dev
 
 Docker est un applicatif permettant de faire fonctionner des micro-machines virtuelles. Docker doit être installé et lancé avant d'executer les commandes suivantes depuis un terminal pointant à la racine du projet.
 
-- Sous Linux : wsl docker compose up -d
+- Sous Linux : docker compose up -d
 - Sous Windows avec WSL (sous-système Linux) : wsl docker compose up -d
 - Sous MAC : avec Docker Desktop
 
@@ -21,3 +21,11 @@ Docker est un applicatif permettant de faire fonctionner des micro-machines virt
 
 1. Pour créer la structure de la base (ajouter "wsl" au début de la commande sous Windows) : docker compose exec php php bin/console doctrine:migrations:migrate
 2. Pour ajouter les données de test : docker compose exec php php bin/console populate-db
+
+## Executer les tests unitaires
+
+1. Ouvrir un terminal et le faire pointer à la racine du projet
+2. Executer les tests
+- Sous Linux : docker compose exec -e APP_ENV=test php php bin/phpunit
+- Sous Windows avec WSL (sous-système Linux) : wsl docker compose exec -e APP_ENV=test php php bin/phpunit
+- Sous MAC : avec Docker Desktop, se connecter au shell de l'instance courante du conteneur "php" puis executer la commande : docker compose exec -e APP_ENV=test php php bin/phpunit
