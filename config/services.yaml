@@ -28,5 +28,9 @@ when@test:
             public: true
         Api\MockGenerator\Object\Business\TagObjectMock:
             public: true
+        Api\MockGenerator\Object\Business\LocationObjectMock:
+            public: true
+        Api\MockGenerator\Object\Business\LocationAreaObjectMock:
+            public: true
         Api\MockGenerator\Entity\UserMock:
             public: true

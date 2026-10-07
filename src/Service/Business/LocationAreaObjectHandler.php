@@ -16,7 +16,7 @@ use Api\Object\Business\CreateLocationAreaRequestObject;
 use Api\Object\Business\LocationAreaObject;
 use Api\Object\Business\PatchRequestObject;
 
-final class LocationAreaObjectHandler implements ObjectHandlerInterface
+class LocationAreaObjectHandler implements ObjectHandlerInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

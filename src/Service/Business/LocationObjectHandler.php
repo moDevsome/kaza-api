@@ -17,7 +17,7 @@ use Api\Enum\Business\ContentTranslationType;
 use Api\Enum\Business\ContentTranslationLocationProperty;
 use Api\Object\Business\ContentTranslationRequestValueObject;
 
-final class LocationObjectHandler implements ObjectHandlerInterface
+class LocationObjectHandler implements ObjectHandlerInterface
 {
     public function __construct(
         private readonly LocationAreaObjectHandler $locatioAreaObjectHandler,
