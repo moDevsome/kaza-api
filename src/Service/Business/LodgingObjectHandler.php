@@ -26,7 +26,7 @@ use Api\Object\Business\PatchRequestObject;
 /**
  * This class is made to load one or more LoadgingObject from the database
  */
-final class LodgingObjectHandler implements ObjectHandlerInterface
+class LodgingObjectHandler implements ObjectHandlerInterface
 {
     private array $allowedPictureFileMimeTypes = [
         'image/bmp',

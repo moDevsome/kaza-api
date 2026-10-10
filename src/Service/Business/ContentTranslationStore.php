@@ -24,7 +24,7 @@ use Api\Helper\StringHelper;
 /**
  * This class is made to load and store all the content translations
  */
-final class ContentTranslationStore
+class ContentTranslationStore
 {
     private array $contentTranslations = [];
     private array $allowedLangTags = [];
