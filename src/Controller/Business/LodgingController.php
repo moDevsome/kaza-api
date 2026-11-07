@@ -219,7 +219,7 @@ final class LodgingController extends AbstractController
     public function removeElement(string $id, string $element): JsonResponse
     {
 
-        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneById($id);
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['id' => $id]);
         if ($currentLodging === null)
             throw new BusinessException(404,  'Lodging (' . $id . ') not found');
 
@@ -254,7 +254,7 @@ final class LodgingController extends AbstractController
     public function patch(string $id, string $property): JsonResponse
     {
 
-        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneById($id);
+        $currentLodging = $this->entityManager->getRepository(Lodging::class)->findOneBy(['id' => $id]);
         if ($currentLodging === null)
             throw new BusinessException(404,  'Lodging (' . $id . ') not found');
 
