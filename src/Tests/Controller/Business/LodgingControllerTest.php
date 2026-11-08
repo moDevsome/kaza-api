@@ -13,6 +13,8 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Uid\Ulid;
 use moDevsome\Palmo\Palmo;
 use Api\Object\Business\AddElementRequestObject;
+use Api\Object\Business\RemoveElementRequestObject;
+use Api\Object\Business\PatchRequestObject;
 use Api\Entity\Lodging;
 use Api\Entity\User;
 use Api\Service\Business\LodgingObjectHandler;
@@ -189,7 +191,7 @@ class LodgingControllerTest extends WebTestCase
         $lodgingId = $this->lodgingStub->getId();
         $allowedElementsType = ['picture', 'tag', 'equipment'];
         $elementType = $allowedElementsType[array_rand($allowedElementsType)];
-        $elementValue = $this->palmo->lorem->word();
+        $elementValue = $this->palmo->id->ulid();
 
         $updatedLodgingObject = $this->mockGenerator->addElement($this->lodgingObjectMock, $elementType, $elementValue);
 
@@ -226,21 +228,19 @@ class LodgingControllerTest extends WebTestCase
 
     public function testRemoveElement(): void
     {
-        $this->markTestSkipped('Temporary disabled, need to use "findOneBy" real method instead of virtual methode');
-
-        /*
         $lodgingId = $this->lodgingStub->getId();
         $allowedElementsType = ['picture', 'tag', 'equipment'];
         $elementType = $allowedElementsType[array_rand($allowedElementsType)];
+        $elementValue = $this->palmo->id->ulid();
 
         $this->lodgingRepositoryMock->expects(self::once())
-            ->method('findOneById')
+            ->method('findOneBy')
             ->with(['id' => $lodgingId])
             ->willReturn($this->lodgingStub);
 
         $this->lodgingObjectHandlerMock->expects(self::once())
             ->method('removeElement')
-            ->with($lodgingId, $elementType, new RemoveElementRequestObject(''))
+            ->with($lodgingId, $elementType, new RemoveElementRequestObject($elementValue))
             ->willReturn($this->lodgingObjectMock);
 
         // Called by checkOwner()
@@ -251,7 +251,7 @@ class LodgingControllerTest extends WebTestCase
 
         // Request the endpoint
         $this->client->request('DELETE', '/auth/lodging/' . $lodgingId . '/remove-' . $elementType, server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
-            'value' => '',
+            'value' => $elementValue,
         ]));
 
         // Validate a successful response and some content
@@ -262,6 +262,49 @@ class LodgingControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertNotNull($content);
         $this->assertSame(json_encode($this->lodgingObjectMock), json_encode($content));
-        */
+    }
+
+    public function testPatch(): void
+    {
+
+        $lodgingId = $this->lodgingStub->getId();
+        $properties = ['title', 'description', 'cover'];
+        $property = $properties[array_rand($properties)];
+        $value = $this->palmo->lorem->word();
+
+        $this->lodgingRepositoryMock->expects(self::once())
+            ->method('findOneBy')
+            ->with(['id' => $lodgingId])
+            ->willReturn($this->lodgingStub);
+
+        $this->lodgingObjectHandlerMock->expects(self::once())
+            ->method('patchOne')
+            ->with($lodgingId, $property, new PatchRequestObject($value), false)
+            ->willReturn($this->lodgingObjectMock);
+
+        // Called by checkOwner()
+        $this->hostRepositoryMock->expects(self::once())
+            ->method('findOneByUserId')
+            ->with($this->userStub->getId())
+            ->willReturn($this->hostStub);
+
+        // Request the endpoint
+        $this->client->request(
+            'PATCH',
+            '/auth/lodging/' . $lodgingId . '/' . $property . '?applyTranslation=false',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: json_encode([
+                'value' => $value,
+            ])
+        );
+
+        // Validate a successful response and some content
+        $responseContent = json_decode($this->client->getResponse()->getContent());
+        $content = $responseContent->content;
+
+        $this->assertResponseFormatSame('json');
+        $this->assertResponseIsSuccessful();
+        $this->assertNotNull($content);
+        $this->assertSame(json_encode($this->lodgingObjectMock), json_encode($content));
     }
 }
